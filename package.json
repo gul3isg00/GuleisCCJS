@@ -1,0 +1,11 @@
+{
+  "name": "guleisccjs",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Aiden Baker-Stanley",
+  "license": "ISC",
+  "description": ""
+}
