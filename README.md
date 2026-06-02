@@ -1,4 +1,9 @@
-program = Program(function_declaration)
-function_declaration = Function(string, statement) //string is the function name
-statement = Return(exp)
-exp = UnOp(operator, exp) | Constant(int)
+### Compiling exemplar files.
+npm start -- <stage_number>
+
+### ARM Assembly to machine code.
+gcc c_src/exemplar/stage_2/valid/<file_name> -o <file_name>
+
+### Running executable.
+./<file_name>
+echo $?

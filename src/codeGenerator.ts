@@ -37,22 +37,31 @@ ${this.generateStatement(input.statement as ReturnStatement)}`;
   }
 
   generateStatement(input: CStatement): string {
-    return ` movl    \$${this.generateExpression(input.expression as Constant)}, %eax
- ret`;
+    return `${this.generateExpression(input.expression)}
+     ret`;
   }
 
   generateExpression(input: CExpression): string {
     if (input.constructor.name == "UnOp") {
-      // const unop = input as UnOp;
-      // switch (unop.expression){
-      //   case("-"):
-      //     break;
+      const unop = input as UnOp;
 
-      // }
-      return "UnOp - WIP"
+      switch (unop.operator) {
+        case ("!"):
+          return `${this.generateExpression(unop.expression)}
+ cmpl    $0, %eax
+ sete    %al
+ movzbl  %al, %eax`;
+        case ("-"):
+          return `${this.generateExpression(unop.expression)}
+neg    %eax`;
+        case ("~"):
+          return `${this.generateExpression(unop.expression)}
+not    %eax`;
+      }
 
+      return 'wait'
     } else {
-      return (input as Constant).value.toString();
+      return ` movl    \$${(input as Constant).value.toString()}, %eax`
     }
   }
 }
