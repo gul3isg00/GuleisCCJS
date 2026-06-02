@@ -31,7 +31,9 @@ export class GuleisCCJS {
     const tokens = this.lexer.lex(rawCode);
     
     if (tokens) {
-      this.generator.generate(this.parser.parse(tokens));
+      const parsed = this.parser.parse(tokens);
+      parsed.print();
+      // this.generator.generate(parsed);
     }
   }
 }

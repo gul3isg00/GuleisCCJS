@@ -1,8 +1,13 @@
 import { ASTNode } from "./AST/ASTNode";
-import { Constant } from "./AST/constructs/constant";
-import { FunctionDeclaration } from "./AST/constructs/functionDeclaration";
-import { Program } from "./AST/constructs/program";
-import { ReturnStatement } from "./AST/constructs/returnStatement";
+import { CFunction } from "./AST/constructs/cFunction";
+import { CProgram } from "./AST/constructs/cProgram";
+import { Constant } from "./AST/constructs/types/constant";
+import { CExpression } from "./AST/constructs/cExpression";
+import { FunctionDeclaration } from "./AST/constructs/types/functionDeclaration";
+import { Program } from "./AST/constructs/types/program";
+import { ReturnStatement } from "./AST/constructs/types/returnStatement";
+import { CStatement } from "./AST/constructs/cStatement";
+import { UnOp } from "./AST/constructs/types/unop";
 
 export class Parser {
   tokens: string[];
@@ -37,12 +42,12 @@ export class Parser {
     throw new Error(`Syntax Error: Expected '${expected}' but got '${token}'`);
   }
 
-  parseProgram(): Program {
+  parseProgram(): CProgram {
     const funcDec = this.parseFunction();
     return new Program(funcDec);
   }
 
-  parseFunction(): FunctionDeclaration {
+  parseFunction(): CFunction {
     this.expect("int");
 
     const identifier = this.consume();
@@ -57,21 +62,23 @@ export class Parser {
     return new FunctionDeclaration(identifier, statement);
   }
 
-  parseStatement(): ReturnStatement {
+  parseStatement(): CStatement {
     this.expect("return");
     const retState = new ReturnStatement(this.parseExpression());
     this.expect(";");
     return retState;
   }
 
-  parseExpression(): Constant {
+  parseExpression(): CExpression {
     const token = this.consume();
     const value = Number(token);
 
     if (isNaN(value)) {
-      throw new Error(`Syntax Error: Expected Integer but got '${token}'`);
-    }
+      const expr = this.parseExpression();
+      return new UnOp(token, expr);
 
-    return new Constant(value);
+    } else {
+      return new Constant(value);
+    }
   }
 }

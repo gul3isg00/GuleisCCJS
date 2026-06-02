@@ -1,9 +1,9 @@
 import { ASTNode } from "./AST/ASTNode";
 import fs from "fs";
-import { FunctionDeclaration } from "./AST/constructs/functionDeclaration";
-import { Program } from "./AST/constructs/program";
-import { ReturnStatement } from "./AST/constructs/returnStatement";
-import { Constant } from "./AST/constructs/constant";
+import { FunctionDeclaration } from "./AST/constructs/types/functionDeclaration";
+import { Program } from "./AST/constructs/types/program";
+import { ReturnStatement } from "./AST/constructs/types/returnStatement";
+import { Constant } from "./AST/constructs/types/constant";
 
 export class CodeGenerator {
   save_location: string;
