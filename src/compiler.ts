@@ -29,11 +29,11 @@ export class GuleisCCJS {
   compile() {
     const rawCode = this.read_file(this.source);
     const tokens = this.lexer.lex(rawCode);
-    
+
     if (tokens) {
       const parsed = this.parser.parse(tokens);
-      parsed.print();
-      // this.generator.generate(parsed);
+
+      this.generator.generate(parsed);
     }
   }
 }
