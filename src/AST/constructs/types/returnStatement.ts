@@ -2,8 +2,6 @@ import { ASTNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 import { ConstructType } from "../constructType";
 
-// Returns an expression.
-// <exp> ::= <int>
 export class ReturnStatement extends ASTNode {
   expression: CExpression;
 
