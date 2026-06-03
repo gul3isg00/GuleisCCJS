@@ -96,12 +96,4 @@ ${exp_a}
       return ` movl \$${(input as Constant).value.toString()}, %eax`
     }
   }
-
-  generateTerm(input: CExpression): string {
-    return "WIP";
-  }
-
-  generateFactor(input: CExpression): string {
-    return "WIP";
-  }
 }
