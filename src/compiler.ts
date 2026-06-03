@@ -3,6 +3,8 @@ import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 
+const DEBUG_MODE = true;
+
 export class GuleisCCJS {
   source: string;
   lexer: Lexer;
@@ -28,12 +30,20 @@ export class GuleisCCJS {
 
   compile() {
     const rawCode = this.read_file(this.source);
+
+    if (DEBUG_MODE) console.log(rawCode);
+
     const tokens = this.lexer.lex(rawCode);
+
+    if (DEBUG_MODE) console.log(tokens);
+
 
     if (tokens) {
       const parsed = this.parser.parse(tokens);
 
-      this.generator.generate(parsed);
+      if (DEBUG_MODE) parsed.print();
+
+      // this.generator.generate(parsed);
     }
   }
 }

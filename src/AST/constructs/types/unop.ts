@@ -22,7 +22,7 @@ export class UnOp extends ASTNode {
   }
 
   static is_unop(token: string): boolean {
-    return token.length == 1 || ALLOWED_OPERATORS.indexOf(token) != -1;
+    return token != undefined && (token.length == 1 && ALLOWED_OPERATORS.indexOf(token) != -1);
   }
 
   toString(): string {

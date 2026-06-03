@@ -10,6 +10,8 @@ import { CStatement } from "./AST/constructs/cStatement";
 import { UnOp } from "./AST/constructs/types/unop";
 import { BinOp } from "./AST/constructs/types/binOp";
 
+const DEBUG_MODE = false;
+
 export class Parser {
   tokens: string[];
   current: number;
@@ -24,6 +26,7 @@ export class Parser {
   }
 
   consume(): string {
+    if (DEBUG_MODE) console.log(`Consuming ${this.tokens[this.current]}`);
     return this.tokens[this.current++];
   }
 
@@ -37,7 +40,9 @@ export class Parser {
 
   expect(expected: string) {
     const token = this.peek();
+    if (DEBUG_MODE) console.log(`Expecting ${token} === ${expected}`);
     if (token === expected) {
+      if (DEBUG_MODE) console.log(` - MATCH, returning ${token}`)
       return this.consume();
     }
     throw new Error(`Syntax Error: Expected '${expected}' but got '${token}'`);
