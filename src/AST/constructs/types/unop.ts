@@ -12,13 +12,17 @@ export class UnOp extends ASTNode {
 
   constructor(operator: string, expression: CExpression) {
     super();
-    if (operator.length > 1 || ALLOWED_OPERATORS.indexOf(operator) == -1) {
+    if (!UnOp.is_unop(operator)) {
       throw new Error(
         `Syntax Error: Expected Unary Operator but got '${operator}'`,
       );
     }
     this.operator = operator;
     this.expression = expression;
+  }
+
+  static is_unop(token: string): boolean {
+    return token.length == 1 || ALLOWED_OPERATORS.indexOf(token) != -1;
   }
 
   toString(): string {

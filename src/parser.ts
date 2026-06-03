@@ -8,6 +8,7 @@ import { Program } from "./AST/constructs/types/program";
 import { ReturnStatement } from "./AST/constructs/types/returnStatement";
 import { CStatement } from "./AST/constructs/cStatement";
 import { UnOp } from "./AST/constructs/types/unop";
+import { BinOp } from "./AST/constructs/types/binOp";
 
 export class Parser {
   tokens: string[];
@@ -42,11 +43,13 @@ export class Parser {
     throw new Error(`Syntax Error: Expected '${expected}' but got '${token}'`);
   }
 
+  // <program> ::= <function>
   parseProgram(): CProgram {
     const funcDec = this.parseFunction();
     return new Program(funcDec);
   }
 
+  // <function> ::= "int" <id> "(" ")" "{" <statement> "}"
   parseFunction(): CFunction {
     this.expect("int");
 
@@ -62,6 +65,7 @@ export class Parser {
     return new FunctionDeclaration(identifier, statement);
   }
 
+  // <statement> ::= "return" <exp> ";"
   parseStatement(): CStatement {
     this.expect("return");
     const retState = new ReturnStatement(this.parseExpression());
@@ -69,16 +73,59 @@ export class Parser {
     return retState;
   }
 
+  // <exp> ::= <term> { ("+" | "-") <term> }
   parseExpression(): CExpression {
-    const token = this.consume();
-    const value = Number(token);
+    let term = this.parseTerm();
+    let next = this.peek();
 
-    if (isNaN(value)) {
-      const expr = this.parseExpression();
-      return new UnOp(token, expr);
+    while (next == "+" || next == "-") {
+      let op = this.consume();
+      let next_term = this.parseTerm();
+      term = new BinOp(op, term, next_term);
+      next = this.peek();
+    }
 
-    } else {
-      return new Constant(value);
+    return term;
+  }
+
+  // <term> ::= <factor> { ("*" | "/") <factor> }
+  parseTerm(): CExpression {
+    let factor = this.parseFactor();
+    let next = this.peek();
+
+    while (next == "*" || next == "/") {
+      let op = this.consume();
+      let next_factor = this.parseFactor();
+      factor = new BinOp(op, factor, next_factor);
+      next = this.peek();
+    }
+
+    return factor;
+  }
+
+  // <factor> ::= "(" <exp> ")" | <unary_op> <factor> | <int
+  parseFactor(): CExpression {
+    const next = this.consume();
+
+    // "(" <exp> ")"
+    if (next == "(") {
+      const exp = this.parseExpression()
+      if (this.consume() != ")") throw new Error(`Syntax Error: ')' expected.`);
+      return exp;
+    }
+    // <unary_op> <factor>
+    else if (UnOp.is_unop(next)) {
+      const op = next;
+      const factor = this.parseFactor();
+      return new UnOp(op, factor);
+    }
+    // <int>
+    else if (!isNaN(Number(next))) {
+      return new Constant(Number(next))
+    }
+    else {
+      throw new Error(`Syntax Error: `)
     }
   }
+
 }
