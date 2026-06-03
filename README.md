@@ -8,6 +8,9 @@ The idea is to write a JavaScript (JS) / TypeScript (TS) C compiler, which compi
 
 In future I hope to also integrate this with a web-based GUI so I can visualise the compilation for educational purposes.
 
+
+For anyone wishing to try something similar themselves, I am heavily following the guide written by **Nora Sandler**. (https://norasandler.com/2017/11/29/Write-a-Compiler.html)
+
 ## Running / Testing
 ### Compiling exemplar files.
 npm start -- <stage_number>
