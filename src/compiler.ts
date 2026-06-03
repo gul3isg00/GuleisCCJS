@@ -43,7 +43,7 @@ export class GuleisCCJS {
 
       if (DEBUG_MODE) parsed.print();
 
-      // this.generator.generate(parsed);
+      this.generator.generate(parsed);
     }
   }
 }

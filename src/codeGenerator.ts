@@ -9,6 +9,7 @@ import { CStatement } from "./AST/constructs/cStatement";
 import { CFunction } from "./AST/constructs/cFunction";
 import { CProgram } from "./AST/constructs/cProgram";
 import { UnOp } from "./AST/constructs/types/unop";
+import { BinOp } from "./AST/constructs/types/binOp";
 
 export class CodeGenerator {
   save_location: string;
@@ -38,7 +39,7 @@ ${this.generateStatement(input.statement as ReturnStatement)}`;
 
   generateStatement(input: CStatement): string {
     return `${this.generateExpression(input.expression)}
-     ret`;
+ ret`;
   }
 
   generateExpression(input: CExpression): string {
@@ -48,20 +49,59 @@ ${this.generateStatement(input.statement as ReturnStatement)}`;
       switch (unop.operator) {
         case ("!"):
           return `${this.generateExpression(unop.expression)}
- cmpl    $0, %eax
- sete    %al
- movzbl  %al, %eax`;
+ cmpl $0, %eax
+ sete %al
+ movzbl %al, %eax`;
         case ("-"):
           return `${this.generateExpression(unop.expression)}
-neg    %eax`;
+neg %eax`;
         case ("~"):
           return `${this.generateExpression(unop.expression)}
-not    %eax`;
+not %eax`;
       }
 
       return 'wait'
+    } else if (input.constructor.name == "BinOp") {
+      const binop = input as BinOp;
+
+      const exp_a = this.generateExpression(binop.expression_a);
+      const exp_b = this.generateExpression(binop.expression_b);
+
+      switch (binop.binary_operator) {
+        case ("+"):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ addl %ecx, %eax`
+        case ("-"):
+          return `${exp_b}
+ pushq %rax
+${exp_a}
+ popq %rcx
+ subl %ecx, %eax`
+        case ("*"):
+          return `${exp_a}
+ pushq %rax
+ ${exp_b}
+ pop %rcx
+ imul %ecx, %eax`
+        case ("/"):
+          return "div"
+      }
+
+      return "ERROR";
+
     } else {
-      return ` movl    \$${(input as Constant).value.toString()}, %eax`
+      return ` movl \$${(input as Constant).value.toString()}, %eax`
     }
+  }
+
+  generateTerm(input: CExpression): string {
+    return "WIP";
+  }
+
+  generateFactor(input: CExpression): string {
+    return "WIP";
   }
 }

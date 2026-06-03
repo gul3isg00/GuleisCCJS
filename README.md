@@ -3,7 +3,7 @@
 This is a personal project I have undertaken to help myself learn the inner workings of a compiler.
 
 
-The idea is to write a JavaScript (JS) / TypeScript (TS) C compiler, which compiles C to ARM Assembly.
+The idea is to write a JavaScript (JS) / TypeScript (TS) C compiler, which compiles C to x64 ARM Assembly.
 
 
 In future I hope to also integrate this with a web-based GUI so I can visualise the compilation for educational purposes.
@@ -59,7 +59,7 @@ These tokens can then be parsed to the parser.
 The parser is arguable the most complex and important part of the process. This is the part which determines whether the code being compiled is valid.
 
 
-It does this by building an **Abstract syntax tree** from the tokens.
+It does this by building an **Abstract syntax tree** from the tokens, creating a structural representation of the input whilst checking for the correct synax.
 
 
 In this implementation the important tokens can be separated out into 4 main types.
