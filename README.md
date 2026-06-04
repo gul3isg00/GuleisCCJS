@@ -3,7 +3,9 @@
 This is a personal project I have undertaken to help myself learn the inner workings of a compiler.
 
 
-The idea is to write a TypeScript (TS) C compiler, which compiles C to x86-64 assembly. written in the AT&T syntax.
+The idea is to write a TypeScript (TS) C compiler, which compiles C to x86-64 assembly. written in the AT&T syntax. 
+
+In this implementation after compiling to assembly, gcc is automatically used to finish the job, translating the assembly to machine code.
 
 
 In future I hope to also integrate this with a web-based GUI so I can visualise the compilation for educational purposes.
