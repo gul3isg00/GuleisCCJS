@@ -78,12 +78,72 @@ export class Parser {
     return retState;
   }
 
-  // <exp> ::= <term> { ("+" | "-") <term> }
+  // <exp> ::= <logical-and-exp> { "||" <logical-and-exp> }
   parseExpression(): CExpression {
+    let loe = this.parseLogicalAndExpression();
+    let next = this.peek();
+
+    while (next == "||") {
+      let op = this.consume();
+      let next_loe = this.parseLogicalAndExpression();
+      loe = new BinOp(op, loe, next_loe);
+      next = this.peek();
+    }
+
+    return loe;
+  }
+
+  // <logical-and-exp> ::= <equality-exp> { "&&" <equality-exp> }
+  parseLogicalAndExpression(): CExpression {
+    let eexp = this.parseEqualityExpression();
+    let next = this.peek();
+
+    while (next == "&&") {
+      let op = this.consume();
+      let next_eexp = this.parseLogicalAndExpression();
+      eexp = new BinOp(op, eexp, next_eexp);
+      next = this.peek();
+    }
+
+    return eexp;
+  }
+
+  // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
+  parseEqualityExpression(): CExpression {
+    let rexp = this.parseRelationalExpression();
+    let next = this.peek();
+
+    while (next == "!=" || next == "==") {
+      let op = this.consume();
+      let next_rexp = this.parseRelationalExpression();
+      rexp = new BinOp(op, rexp, next_rexp);
+      next = this.peek();
+    }
+
+    return rexp;
+  }
+
+  // <relational-exp> ::= <additive-exp> { ("<" | ">" | "<=" | ">=") <additive-exp> }
+  parseRelationalExpression(): CExpression {
+    let add_exp = this.parseAdditiveExpression();
+    let next = this.peek();
+
+    while (next == "<" || next == ">" || next == "<=" || next == ">=") {
+      let op = this.consume();
+      let next_add_exp = this.parseAdditiveExpression();
+      add_exp = new BinOp(op, add_exp, next_add_exp);
+      next = this.peek();
+    }
+
+    return add_exp;
+  }
+
+  // <additive-exp> ::= <term> { ("+" | "-") <term> }
+  parseAdditiveExpression(): CExpression {
     let term = this.parseTerm();
     let next = this.peek();
 
-    while (next == "+" || next == "-") {
+    while (next == "<" || next == ">" || next == "<=" || next == ">=") {
       let op = this.consume();
       let next_term = this.parseTerm();
       term = new BinOp(op, term, next_term);
