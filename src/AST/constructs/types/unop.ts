@@ -1,14 +1,10 @@
 import { ASTNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
-import { ConstructType } from "../constructType";
-
 const ALLOWED_OPERATORS = ["!", "-", "~"];
 
 export class UnOp extends ASTNode {
   operator: string;
   expression: CExpression;
-
-  readonly type = ConstructType.Exp as const;
 
   constructor(operator: string, expression: CExpression) {
     super();

@@ -34,11 +34,12 @@ export class CodeGenerator {
   generateFunction(input: CFunction): string {
     return `.globl ${input.name}
 ${input.name}:
-${this.generateStatement(input.statement as ReturnStatement)}`;
+${this.generateStatement(input.statements[0] as ReturnStatement)}`;
   }
 
   generateStatement(input: CStatement): string {
-    return `${this.generateExpression(input.expression)}
+    const re = input as ReturnStatement
+    return `${this.generateExpression(re.expression)}
  ret`;
   }
 

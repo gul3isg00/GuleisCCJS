@@ -30,9 +30,9 @@ Clone the repository to a local directory, then run ``npm install``.
 ``./<file_name>``
 
 ### Running test script.
-``npm test -- <stage_number>``
+``npm test -- <start_stage_number> <end_stage_number>``
 
-*(stage_number must be a number 1-10)*
+*(start/end_stage_number must be a number 1-10. If no "end_stage_number" is inputted, it'll just run a singular test)*
 
 ## Project Structure
 

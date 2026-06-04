@@ -9,6 +9,9 @@ import { ReturnStatement } from "./AST/constructs/types/returnStatement";
 import { CStatement } from "./AST/constructs/cStatement";
 import { UnOp } from "./AST/constructs/types/unop";
 import { BinOp } from "./AST/constructs/types/binOp";
+import { Declare } from "./AST/constructs/types/declare";
+import { Var } from "./AST/constructs/types/var";
+import { Assign } from "./AST/constructs/types/assign";
 
 const DEBUG_MODE = false;
 
@@ -54,7 +57,7 @@ export class Parser {
     return new Program(funcDec);
   }
 
-  // <function> ::= "int" <id> "(" ")" "{" <statement> "}"
+  // <function> ::= "int" <id> "(" ")" "{" { <statement> } "}"
   parseFunction(): CFunction {
     this.expect("int");
 
@@ -64,41 +67,92 @@ export class Parser {
     this.expect(")");
     this.expect("{");
 
-    const statement = this.parseStatement();
+    let next = this.peek();
+
+    let statements: CStatement[] = []
+
+    while (next != "}") {
+      const statement = this.parseStatement();
+
+      statements.push(statement);
+
+      next = this.peek();
+      if (next == null){
+        throw new Error(`Syntax Error: Expected: "}"`);
+      }
+    }
 
     this.expect("}");
-    return new FunctionDeclaration(identifier, statement);
+    
+    return new FunctionDeclaration(identifier, statements);
   }
 
   // <statement> ::= "return" <exp> ";"
+  //             | <exp> ";"
+  //             | "int" <id> [ = <exp>] ";" 
   parseStatement(): CStatement {
-    this.expect("return");
-    const retState = new ReturnStatement(this.parseExpression());
-    this.expect(";");
-    return retState;
+    const token = this.consume()
+
+    switch (token) {
+      // Return statement.
+      case ("return"):
+        const retState = new ReturnStatement(this.parseExpression());
+        this.expect(";");
+        return retState;
+
+      // Declaration of integer variable.
+      case ("int"):
+        const identifier = this.consume();
+        let next = this.peek();
+
+        if (next == ";") {
+          return new Declare(identifier)
+        } else {
+          this.expect("=");
+          const exp = this.parseExpression();
+          this.expect(";")
+          return new Declare(identifier, exp);
+        }
+
+      // Generic expression.
+      default:
+        const exp = this.parseExpression();
+        this.expect(";")
+        return exp;
+    }
   }
 
   // Lower the line number, higher the precidence.
+  // <exp> ::= <id> "=" <exp> | <logical-or-exp>
   parseExpression(): CExpression {
-    return this.parseExpressionModular(() => {
+
+    const left_exp = this.parseExpressionModular(() => {
       return this.parseExpressionModular(() => {
         return this.parseExpressionModular(() => {
           return this.parseExpressionModular(() => {
             return this.parseExpressionModular(() => {
               return this.parseExpressionModular(() => {
                 return this.parseFactor()
-              // <term> ::= <factor> { ("*" | "/") <factor> }
+                // <term> ::= <factor> { ("*" | "/") <factor> }
               }, ["*", "/"])
-            // <additive-exp> ::= <term> { ("+" | "-") <term> }
+              // <additive-exp> ::= <term> { ("+" | "-") <term> }
             }, ["+", "-"])
-          // <relational-exp> ::= <additive-exp> { ("<" | ">" | "<=" | ">=") <additive-exp> }
+            // <relational-exp> ::= <additive-exp> { ("<" | ">" | "<=" | ">=") <additive-exp> }
           }, ["<", ">", ">=", "<="])
-        // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
+          // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
         }, ["!=", "=="])
-      // <logical-and-exp> ::= <equality-exp> { "&&" <equality-exp> }
+        // <logical-and-exp> ::= <equality-exp> { "&&" <equality-exp> }
       }, ["&&"])
-    // <exp> ::= <logical-and-exp> { "||" <logical-and-exp> }
+      // <logical-or-exp> ::= <logical-and-exp> { "||" <logical-and-exp> } 
     }, ["||"])
+
+
+    if (this.peek() == "=") {
+      this.consume();
+      return new Assign((left_exp as Var).str, this.parseExpression());
+    } else {
+      return left_exp;
+    }
   }
 
   // Lowest precidence expression
@@ -116,7 +170,7 @@ export class Parser {
     return expression;
   }
 
-  // <factor> ::= "(" <exp> ")" | <unary_op> <factor> | <int
+  // <factor> ::= "(" <exp> ")" | <unary_op> <factor> | <int> | <id>
   parseFactor(): CExpression {
     const next = this.consume();
 
@@ -136,9 +190,9 @@ export class Parser {
     else if (!isNaN(Number(next))) {
       return new Constant(Number(next))
     }
+    // <id>
     else {
-      throw new Error(`Syntax Error: Expected return value.`)
+      return new Var(next);
     }
   }
-
 }

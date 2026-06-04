@@ -1,15 +1,17 @@
 import { ASTNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 
-export class ReturnStatement extends ASTNode {
+export class Assign extends ASTNode {
+  str: string;
   expression: CExpression;
 
-  constructor(expression: CExpression) {
+  constructor(str: string, expression: CExpression) {
     super();
+    this.str = str;
     this.expression = expression;
   }
 
   toString(): string {
-    return `{Return Statement | expression: \n${this.expression.toString()}}`;
+    return `(Assign | string: \n${this.str})\n\n`;
   }
 }

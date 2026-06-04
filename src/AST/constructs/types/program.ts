@@ -1,11 +1,8 @@
 import { ASTNode } from "../../ASTNode";
 import { CFunction } from "../cFunction";
-import { ConstructType } from "../constructType";
 
 export class Program extends ASTNode {
   function_declaration: CFunction;
-
-  readonly type = ConstructType.Prog as const;
 
   constructor(function_declaration: CFunction) {
     super();
