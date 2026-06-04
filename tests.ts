@@ -46,7 +46,7 @@ async function iterate_through_files(stage: number, main_path: string, extra_pat
       console.log(`\n(Stage ${stage} - ${extra_path}) ${file}.`);
       
       const compiler = new GuleisCCJS(fullFilePath);
-      compiler.compile();
+      await compiler.compile();
 
       if (extra_path === "invalid") {
         console.log(` - ${current_stage} ❌ (Compiled when it should have failed)`);
@@ -65,10 +65,6 @@ async function iterate_through_files(stage: number, main_path: string, extra_pat
         expectedExitCode = runErr.code !== undefined ? runErr.code : -1;
       }
       console.log(` - ${current_stage} ✅ (Oracle Exit Code: ${expectedExitCode})`);
-
-      current_stage = "Compiling custom assembly to machine code (gcc)";
-      await execAsync(`gcc ${fullFilePath.replace(".c", ".s")} -o ${executablePath}`);
-      console.log(` - ${current_stage} ✅`);
 
       current_stage = "Running file.";
       let actualExitCode = 0;

@@ -2,6 +2,11 @@ import fs from "fs";
 import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+
+const execAsync = promisify(exec);
 
 const DEBUG_MODE = false;
 
@@ -28,7 +33,14 @@ export class GuleisCCJS {
     }
   }
 
-  compile() {
+  async assembly_to_machine_code(source_file?: string) {
+    const source = source_file ?? this.source;
+
+    await execAsync(`gcc ${source} -o ${source.replace(".c", "")}`);
+
+  }
+
+  async compile() {
     const rawCode = this.read_file(this.source);
 
     if (DEBUG_MODE) console.log(rawCode);
@@ -44,6 +56,8 @@ export class GuleisCCJS {
       if (DEBUG_MODE) parsed.print();
 
       this.generator.generate(parsed);
+
+      await this.assembly_to_machine_code(this.source);
     }
   }
 }

@@ -11,12 +11,18 @@ In future I hope to also integrate this with a web-based GUI so I can visualise 
 
 For anyone wishing to try something similar themselves, I am heavily following the guide written by **Nora Sandler**. (https://norasandler.com/2017/11/29/Write-a-Compiler.html)
 
-## Running / Testing
-### Compiling exemplar files.
-``npm start -- <file_path>``
+## Pre-requisites
 
-### ARM Assembly to machine code.
-``gcc c_src/exemplar/stage_2/valid/<file_path> -o <file_name>``
+- Node (v26.2.0)
+- gcc
+
+## Setup
+
+Clone the repository to a local directory, then run ``npm install``.
+
+## Running / Testing
+### C file compilation.
+``npm start -- <file_path>``
 
 ### Running executable.
 ``./<file_name>``
@@ -95,4 +101,4 @@ A **Factor** can be:
 
 By breaking down and evaluating **Expressions** this way it means proper logic can be followed, and we can safely disambiguate the order and type of operations being used within the expression.
 
-### Generator70079108
+### Generator
