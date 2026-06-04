@@ -87,7 +87,13 @@ ${exp_a}
  pop %rcx
  imul %ecx, %eax`
         case ("/"):
-          return "div"
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ movl %eax, %ebx
+ popq %rax
+ cltd
+ idivl %ebx`
       }
 
       return "ERROR";
