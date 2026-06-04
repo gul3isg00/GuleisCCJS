@@ -78,94 +78,42 @@ export class Parser {
     return retState;
   }
 
-  // <exp> ::= <logical-and-exp> { "||" <logical-and-exp> }
+  // Lower the line number, higher the precidence.
   parseExpression(): CExpression {
-    let loe = this.parseLogicalAndExpression();
-    let next = this.peek();
-
-    while (next == "||") {
-      let op = this.consume();
-      let next_loe = this.parseLogicalAndExpression();
-      loe = new BinOp(op, loe, next_loe);
-      next = this.peek();
-    }
-
-    return loe;
+    return this.parseExpressionModular(() => {
+      return this.parseExpressionModular(() => {
+        return this.parseExpressionModular(() => {
+          return this.parseExpressionModular(() => {
+            return this.parseExpressionModular(() => {
+              return this.parseExpressionModular(() => {
+                return this.parseFactor()
+              // <term> ::= <factor> { ("*" | "/") <factor> }
+              }, ["*", "/"])
+            // <additive-exp> ::= <term> { ("+" | "-") <term> }
+            }, ["+", "-"])
+          // <relational-exp> ::= <additive-exp> { ("<" | ">" | "<=" | ">=") <additive-exp> }
+          }, ["<", ">", ">=", "<="])
+        // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
+        }, ["!=", "=="])
+      // <logical-and-exp> ::= <equality-exp> { "&&" <equality-exp> }
+      }, ["&&"])
+    // <exp> ::= <logical-and-exp> { "||" <logical-and-exp> }
+    }, ["||"])
   }
 
-  // <logical-and-exp> ::= <equality-exp> { "&&" <equality-exp> }
-  parseLogicalAndExpression(): CExpression {
-    let eexp = this.parseEqualityExpression();
+  // Lowest precidence expression
+  parseExpressionModular(parse_method: () => CExpression, operators: string[]): CExpression {
+    let expression = parse_method()
     let next = this.peek();
 
-    while (next == "&&") {
+    while (operators.indexOf(next) != -1) {
       let op = this.consume();
-      let next_eexp = this.parseLogicalAndExpression();
-      eexp = new BinOp(op, eexp, next_eexp);
+      let next_expression = parse_method();
+      expression = new BinOp(op, expression, next_expression);
       next = this.peek();
     }
 
-    return eexp;
-  }
-
-  // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
-  parseEqualityExpression(): CExpression {
-    let rexp = this.parseRelationalExpression();
-    let next = this.peek();
-
-    while (next == "!=" || next == "==") {
-      let op = this.consume();
-      let next_rexp = this.parseRelationalExpression();
-      rexp = new BinOp(op, rexp, next_rexp);
-      next = this.peek();
-    }
-
-    return rexp;
-  }
-
-  // <relational-exp> ::= <additive-exp> { ("<" | ">" | "<=" | ">=") <additive-exp> }
-  parseRelationalExpression(): CExpression {
-    let add_exp = this.parseAdditiveExpression();
-    let next = this.peek();
-
-    while (next == "<" || next == ">" || next == "<=" || next == ">=") {
-      let op = this.consume();
-      let next_add_exp = this.parseAdditiveExpression();
-      add_exp = new BinOp(op, add_exp, next_add_exp);
-      next = this.peek();
-    }
-
-    return add_exp;
-  }
-
-  // <additive-exp> ::= <term> { ("+" | "-") <term> }
-  parseAdditiveExpression(): CExpression {
-    let term = this.parseTerm();
-    let next = this.peek();
-
-    while (next == "<" || next == ">" || next == "<=" || next == ">=") {
-      let op = this.consume();
-      let next_term = this.parseTerm();
-      term = new BinOp(op, term, next_term);
-      next = this.peek();
-    }
-
-    return term;
-  }
-
-  // <term> ::= <factor> { ("*" | "/") <factor> }
-  parseTerm(): CExpression {
-    let factor = this.parseFactor();
-    let next = this.peek();
-
-    while (next == "*" || next == "/") {
-      let op = this.consume();
-      let next_factor = this.parseFactor();
-      factor = new BinOp(op, factor, next_factor);
-      next = this.peek();
-    }
-
-    return factor;
+    return expression;
   }
 
   // <factor> ::= "(" <exp> ")" | <unary_op> <factor> | <int
