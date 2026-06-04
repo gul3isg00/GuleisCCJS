@@ -3,7 +3,7 @@ import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 export class GuleisCCJS {
   source: string;

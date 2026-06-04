@@ -129,7 +129,7 @@ export class Parser {
       return new Constant(Number(next))
     }
     else {
-      throw new Error(`Syntax Error: `)
+      throw new Error(`Syntax Error: Expected return value.`)
     }
   }
 
