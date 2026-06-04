@@ -13,7 +13,7 @@ async function run_tests(stages: number) {
 
   let file_path = "c_src/exemplar/stage_";
 
-  if (stages == null || isNaN(stages)) return;
+  if (stages == null || isNaN(stages) || stages < 1  || stages > 10) return;
 
   for (let x = 1; x <= stages; x++) {
     for (let y = 0; y < 2; y++) {

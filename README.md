@@ -13,15 +13,18 @@ For anyone wishing to try something similar themselves, I am heavily following t
 
 ## Running / Testing
 ### Compiling exemplar files.
-npm start -- <stage_number>
+``npm start -- <file_path>``
 
 ### ARM Assembly to machine code.
-gcc c_src/exemplar/stage_2/valid/<file_name> -o <file_name>
+``gcc c_src/exemplar/stage_2/valid/<file_path> -o <file_name>``
 
 ### Running executable.
-./<file_name>
-echo $?
+``./<file_name>``
 
+### Running test script.
+``npm test -- <stage_number>``
+
+*(stage_number must be a number 1-10)*
 
 ## Project Structure
 
@@ -92,4 +95,4 @@ A **Factor** can be:
 
 By breaking down and evaluating **Expressions** this way it means proper logic can be followed, and we can safely disambiguate the order and type of operations being used within the expression.
 
-### Generator
+### Generator70079108
