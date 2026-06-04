@@ -1,5 +1,4 @@
 import { ASTNode } from "../../ASTNode";
-import { ConstructType } from "../constructType";
 
 export class Constant extends ASTNode {
   value: number;
