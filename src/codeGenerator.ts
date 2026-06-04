@@ -43,6 +43,8 @@ ${this.generateStatement(input.statement as ReturnStatement)}`;
   }
 
   generateExpression(input: CExpression): string {
+
+    // If the expression is UNOP
     if (input.constructor.name == "UnOp") {
       const unop = input as UnOp;
 
@@ -61,7 +63,10 @@ not %eax`;
       }
 
       return 'wait'
-    } else if (input.constructor.name == "BinOp") {
+    }
+
+    // If the expression is BINOP 
+    else if (input.constructor.name == "BinOp") {
       const binop = input as BinOp;
 
       const exp_a = this.generateExpression(binop.expression_a);
@@ -94,11 +99,84 @@ ${exp_b}
  popq %rax
  cltd
  idivl %ebx`
+        case ("&&"):
+          return `${exp_a}
+ cmpl $0, %eax
+ jne _clause2
+ jmp _end
+_clause2:
+${exp_b}
+ cmpl $0, %eax
+ movl $0, %eax
+ setne %al
+_end:`;
+        case ("||"):
+          return `${exp_a}
+ cmpl $0, %eax
+ je _clause2
+ movl $1, %eax
+ jmp _end
+_clause2:
+${exp_b}
+ cmpl $0, %eax
+ movl $0, %eax
+ setne %al
+_end:`;
+        case (">"):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ cmpl %eax, %ecx
+ movl $0, %eax
+ setg %al`;
+        case ("<"):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ cmpl %eax, %ecx
+ movl $0, %eax
+ setl %al`;
+        case ("=="):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ cmpl %eax, %ecx
+ movl $0, %eax
+ sete %al`;
+        case ("!="):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ cmpl %eax, %ecx
+ movl $0, %eax
+ setne %al`;
+        case (">="):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ cmpl %eax, %ecx
+ movl $0, %eax
+ setge %al`;
+        case ("<="):
+          return `${exp_a}
+ pushq %rax
+${exp_b}
+ popq %rcx
+ cmpl %eax, %ecx
+ movl $0, %eax
+ setle %al`;
       }
 
       return "ERROR";
 
-    } else {
+    }
+    // Else the expression must be a CONSTANT
+    else {
       return ` movl \$${(input as Constant).value.toString()}, %eax`
     }
   }

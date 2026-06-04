@@ -2,7 +2,7 @@ import { ASTNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 import { ConstructType } from "../constructType";
 
-const ALLOWED_OPERATORS = ["+", "-", "/", "*"];
+const ALLOWED_OPERATORS = ["+", "-", "/", "*", "==", "!=", "&&", "||", "<=", ">=", ">", "<"];
 
 export class BinOp extends ASTNode {
     binary_operator: string;
@@ -13,7 +13,7 @@ export class BinOp extends ASTNode {
 
     constructor(binary_operator: string, expression_a: CExpression, expression_b: CExpression) {
         super();
-        if (binary_operator.length > 1 || ALLOWED_OPERATORS.indexOf(binary_operator) == -1) {
+        if (binary_operator.length < 1 || binary_operator.length > 2 || ALLOWED_OPERATORS.indexOf(binary_operator) == -1) {
             throw new Error(
                 `Syntax Error: Expected Binary Operator but got '${binary_operator}'`,
             );
