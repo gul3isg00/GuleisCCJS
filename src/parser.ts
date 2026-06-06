@@ -103,23 +103,26 @@ export class Parser
   //             | "int" <id> [ = <exp>] ";" 
   _parseStatement(): CStatement
   {
-    const token = this.consume()
+    const token = this.peek()
 
     switch (token)
     {
       // Return statement.
       case ("return"):
+        this.consume();
         const retState = new ReturnStatement(this._parseExpression());
         this.expect(";");
         return retState;
 
       // Declaration of integer variable.
       case ("int"):
+        this.consume();
         const identifier = this.consume();
         let next = this.peek();
 
         if (next == ";")
         {
+          this.consume();
           return new Declare(identifier)
         } else
         {
@@ -154,25 +157,54 @@ export class Parser
             {
               return this._parseExpressionModular(() =>
               {
-                return this._parseFactor()
-                // <term> ::= <factor> { ("*" | "/") <factor> }
-              }, ["*", "/"])
-              // <additive-exp> ::= <term> { ("+" | "-") <term> }
-            }, ["+", "-"])
-            // <relational-exp> ::= <additive-exp> { ("<" | ">" | "<=" | ">=") <additive-exp> }
-          }, ["<", ">", ">=", "<="])
-          // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
-        }, ["!=", "=="])
+                return this._parseExpressionModular(() =>
+                {
+                  return this._parseExpressionModular(() =>
+                  {
+                    return this._parseExpressionModular(() =>
+                    {
+                      return this._parseExpressionModular(() =>
+                      {
+                        return this._parseFactor()
+                        // <term> ::= <factor> { ("*" | "/" | "%") <factor> }
+                      }, ["*", "/", "%"])
+                      // <additive-exp> ::= <term> { ("+" | "-") <term> }
+                    }, ["+", "-"])
+                    // <bitwise-exp> ::= <additive-exp> { ("<<" | ">>") <additive-exp> }
+                  }, ["<<", ">>"])
+                  // <relational-exp> ::= <bitwise-exp> { ("<" | ">" | "<=" | ">=") <bitwise-exp> }
+                }, ["<", ">", ">=", "<="])
+                // <equality-exp> ::= <relational-exp> { ("!=" | "==") <relational-exp> }
+              }, ["!=", "=="])
+              // <bitwise-and-exp> ::= <equality-exp> { "&" <equality-exp> }
+            }, ["&"])
+            // <bitwise-xor-exp> ::= <bitwise-and-exp> { "^" <bitwise-and-exp> }
+          }, ["^"]);
+          // <bitwise-or-exp> ::= <bitwise-xor-exp> { "|" <bitwise-xor-exp> }
+        }, ["|"])
         // <logical-and-exp> ::= <equality-exp> { "&&" <equality-exp> }
       }, ["&&"])
       // <logical-or-exp> ::= <logical-and-exp> { "||" <logical-and-exp> } 
     }, ["||"])
 
 
-    if (this.peek() == "=")
+    // Create assignment blocks.
+    const assignOps = ["=", "+=", "-=", "*=", "/=", "%=", ">>=", "<<=", "&=", "|=", "^="];
+    const nextOp = this.peek();
+
+    if (assignOps.indexOf(nextOp) != -1)
     {
       this.consume();
-      return new Assign((left_exp as VariableRef).str, this._parseExpression());
+
+      const right_exp = this._parseExpression();
+
+      if (nextOp == "=")
+      {
+        return new Assign((left_exp as VariableRef).str, right_exp);
+      } else
+      {
+        return new BinOp(nextOp, left_exp, right_exp);
+      }
     } else
     {
       return left_exp;

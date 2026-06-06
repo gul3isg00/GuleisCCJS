@@ -9,6 +9,8 @@ export class Lexer
 
   lex(input: string): RegExpMatchArray | null
   {
-    return input.match(this.lex_regex);
+    const tokens = input.match(this.lex_regex);
+
+    return tokens;
   }
 }

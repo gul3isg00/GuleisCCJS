@@ -115,7 +115,7 @@ export class CodeGenerator
   {
     if (this.variable_map[dec.str] != null)
     {
-      throw new Error(`XYZ Error: Variable ${dec.str} defined more than once.`);
+      throw new Error(`Semantic Error: Variable ${dec.str} defined more than once.`);
     }
 
     if (dec.expression)
@@ -162,6 +162,13 @@ export class CodeGenerator
 
   _generateAssign(ass: Assign)
   {
+
+    // Throw error if the variable hasn't been declared yet.
+    if (!this.variable_map[ass.str])
+    {
+      throw new Error(`Semantic Error: Undeclared identifier '${ass.str}'`);
+    }
+
     this._generateExpression(ass.expression);
     const offset = this.variable_map[ass.str];
     this.emit(` movl %eax, ${offset}(%rbp)`)
@@ -169,6 +176,12 @@ export class CodeGenerator
 
   _generateVariableRef(varRef: VariableRef)
   {
+    // Throw error if the variable hasn't been declared yet.
+    if (!this.variable_map[varRef.str])
+    {
+      throw new Error(`Semantic Error: Undeclared identifier '${varRef.str}'`);
+    }
+
     const offset = this.variable_map[varRef.str];
     this.emit(` movl %eax, ${offset}(%rbp)`)
   }
@@ -376,49 +389,19 @@ _end_${id}: `);
  andl %ecx, %eax`);
     }
 
-    // All the Operator + Assignment Ops (e.g. "<operator>=")
-    else if (binop.binary_operator == "+=")
+    // Handle compound assignments.
+    const compoundAssignments = ["+=", "-=", "*=", "/=", "%=", ">>=", "<<=", "&=", "|=", "^="];
+
+    if (compoundAssignments.includes(binop.binary_operator))
     {
       const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("+", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "-=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("-", binop.expression_a, binop.expression_b)));
+      const baseOp = binop.binary_operator.slice(0, -1);
+
+      this._generateExpression(
+        new Assign(varRef.str, new BinOp(baseOp, binop.expression_a, binop.expression_b))
+      );
     }
-    else if (binop.binary_operator == "*=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("*", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "/=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("/", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "%=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("%", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == ">>=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp(">>", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "<<=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("<<", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "&=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("&", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "|=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("|", binop.expression_a, binop.expression_b)));
-    } else if (binop.binary_operator == "^=")
-    {
-      const varRef = binop.expression_a as VariableRef;
-      this._generateExpression(new Assign(varRef.str, new BinOp("^", binop.expression_a, binop.expression_b)));
-    }
+
     // Less than
     else
     {

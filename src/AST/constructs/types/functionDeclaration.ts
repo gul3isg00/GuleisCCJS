@@ -15,6 +15,6 @@ export class FunctionDeclaration extends ASTNode
 
   toString(): string
   {
-    return `[Function Declaration | name: ${this.name}, statement: \n${this.statements.length}]`;
+    return `[Function Declaration | name: ${this.name}, statement: \n${this.statements.map(s => s.toString())}]`;
   }
 }
