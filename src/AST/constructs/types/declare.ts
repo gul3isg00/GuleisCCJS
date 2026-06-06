@@ -1,17 +1,20 @@
 import { ASTNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 
-export class Declare extends ASTNode {
+export class Declare extends ASTNode
+{
   str: string;
   expression?: CExpression;
 
-  constructor(str: string, expression?: CExpression) {
+  constructor(str: string, expression?: CExpression)
+  {
     super();
     this.str = str;
     this.expression = expression;
   }
 
-  toString(): string {
+  toString(): string
+  {
     return `(Declare | string: \n${this.str})\n\n`;
   }
 }

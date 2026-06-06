@@ -1,6 +1,6 @@
 import { ASTNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
-const ALLOWED_OPERATORS = ["!", "-", "~"];
+const ALLOWED_OPERATORS = ["!", "-", "~", "++", "--"];
 
 export class UnOp extends ASTNode {
   operator: string;

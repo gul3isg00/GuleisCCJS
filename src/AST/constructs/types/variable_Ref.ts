@@ -1,6 +1,6 @@
 import { ASTNode } from "../../ASTNode";
 
-export class Var extends ASTNode {
+export class VariableRef extends ASTNode {
   str: string;
 
   constructor(str: string) {
@@ -9,6 +9,6 @@ export class Var extends ASTNode {
   }
 
   toString(): string {
-    return `(Var | string: \n${this.str})\n\n`;
+    return `(VariableRef | string: \n${this.str})\n\n`;
   }
 }

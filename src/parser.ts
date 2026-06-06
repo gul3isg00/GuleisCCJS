@@ -10,41 +10,48 @@ import { CStatement } from "./AST/constructs/cStatement";
 import { UnOp } from "./AST/constructs/types/unop";
 import { BinOp } from "./AST/constructs/types/binOp";
 import { Declare } from "./AST/constructs/types/declare";
-import { Var } from "./AST/constructs/types/var";
+import { VariableRef } from "./AST/constructs/types/variable_Ref";
 import { Assign } from "./AST/constructs/types/assign";
 
 const DEBUG_MODE = false;
 
-export class Parser {
+export class Parser
+{
   tokens: string[];
   current: number;
 
-  constructor() {
+  constructor()
+  {
     this.tokens = [];
     this.current = 0;
   }
 
-  peek(): string {
+  peek(): string
+  {
     return this.tokens[this.current];
   }
 
-  consume(): string {
+  consume(): string
+  {
     if (DEBUG_MODE) console.log(`Consuming ${this.tokens[this.current]}`);
     return this.tokens[this.current++];
   }
 
-  parse(tokens: string[]): ASTNode {
+  parse(tokens: string[]): ASTNode
+  {
     this.tokens = tokens;
     this.current = 0;
 
     // Start parsing. The root is always a 'Program'.
-    return this.parseProgram();
+    return this._parseProgram();
   }
 
-  expect(expected: string) {
+  expect(expected: string)
+  {
     const token = this.peek();
     if (DEBUG_MODE) console.log(`Expecting ${token} === ${expected}`);
-    if (token === expected) {
+    if (token === expected)
+    {
       if (DEBUG_MODE) console.log(` - MATCH, returning ${token}`)
       return this.consume();
     }
@@ -52,13 +59,15 @@ export class Parser {
   }
 
   // <program> ::= <function>
-  parseProgram(): CProgram {
-    const funcDec = this.parseFunction();
+  _parseProgram(): CProgram
+  {
+    const funcDec = this._parseFunction();
     return new Program(funcDec);
   }
 
   // <function> ::= "int" <id> "(" ")" "{" { <statement> } "}"
-  parseFunction(): CFunction {
+  _parseFunction(): CFunction
+  {
     this.expect("int");
 
     const identifier = this.consume();
@@ -71,32 +80,36 @@ export class Parser {
 
     let statements: CStatement[] = []
 
-    while (next != "}") {
-      const statement = this.parseStatement();
+    while (next != "}")
+    {
+      const statement = this._parseStatement();
 
       statements.push(statement);
 
       next = this.peek();
-      if (next == null){
+      if (next == null)
+      {
         throw new Error(`Syntax Error: Expected: "}"`);
       }
     }
 
     this.expect("}");
-    
+
     return new FunctionDeclaration(identifier, statements);
   }
 
   // <statement> ::= "return" <exp> ";"
   //             | <exp> ";"
   //             | "int" <id> [ = <exp>] ";" 
-  parseStatement(): CStatement {
+  _parseStatement(): CStatement
+  {
     const token = this.consume()
 
-    switch (token) {
+    switch (token)
+    {
       // Return statement.
       case ("return"):
-        const retState = new ReturnStatement(this.parseExpression());
+        const retState = new ReturnStatement(this._parseExpression());
         this.expect(";");
         return retState;
 
@@ -105,18 +118,20 @@ export class Parser {
         const identifier = this.consume();
         let next = this.peek();
 
-        if (next == ";") {
+        if (next == ";")
+        {
           return new Declare(identifier)
-        } else {
+        } else
+        {
           this.expect("=");
-          const exp = this.parseExpression();
+          const exp = this._parseExpression();
           this.expect(";")
           return new Declare(identifier, exp);
         }
 
       // Generic expression.
       default:
-        const exp = this.parseExpression();
+        const exp = this._parseExpression();
         this.expect(";")
         return exp;
     }
@@ -124,15 +139,22 @@ export class Parser {
 
   // Lower the line number, higher the precidence.
   // <exp> ::= <id> "=" <exp> | <logical-or-exp>
-  parseExpression(): CExpression {
+  _parseExpression(): CExpression
+  {
 
-    const left_exp = this.parseExpressionModular(() => {
-      return this.parseExpressionModular(() => {
-        return this.parseExpressionModular(() => {
-          return this.parseExpressionModular(() => {
-            return this.parseExpressionModular(() => {
-              return this.parseExpressionModular(() => {
-                return this.parseFactor()
+    const left_exp = this._parseExpressionModular(() =>
+    {
+      return this._parseExpressionModular(() =>
+      {
+        return this._parseExpressionModular(() =>
+        {
+          return this._parseExpressionModular(() =>
+          {
+            return this._parseExpressionModular(() =>
+            {
+              return this._parseExpressionModular(() =>
+              {
+                return this._parseFactor()
                 // <term> ::= <factor> { ("*" | "/") <factor> }
               }, ["*", "/"])
               // <additive-exp> ::= <term> { ("+" | "-") <term> }
@@ -147,22 +169,26 @@ export class Parser {
     }, ["||"])
 
 
-    if (this.peek() == "=") {
+    if (this.peek() == "=")
+    {
       this.consume();
-      return new Assign((left_exp as Var).str, this.parseExpression());
-    } else {
+      return new Assign((left_exp as VariableRef).str, this._parseExpression());
+    } else
+    {
       return left_exp;
     }
   }
 
   // Lowest precidence expression
-  parseExpressionModular(parse_method: () => CExpression, operators: string[]): CExpression {
-    let expression = parse_method()
+  _parseExpressionModular(_parse_method: () => CExpression, operators: string[]): CExpression
+  {
+    let expression = _parse_method()
     let next = this.peek();
 
-    while (operators.indexOf(next) != -1) {
+    while (operators.indexOf(next) != -1)
+    {
       let op = this.consume();
-      let next_expression = parse_method();
+      let next_expression = _parse_method();
       expression = new BinOp(op, expression, next_expression);
       next = this.peek();
     }
@@ -171,28 +197,33 @@ export class Parser {
   }
 
   // <factor> ::= "(" <exp> ")" | <unary_op> <factor> | <int> | <id>
-  parseFactor(): CExpression {
+  _parseFactor(): CExpression
+  {
     const next = this.consume();
 
     // "(" <exp> ")"
-    if (next == "(") {
-      const exp = this.parseExpression()
+    if (next == "(")
+    {
+      const exp = this._parseExpression()
       if (this.consume() != ")") throw new Error(`Syntax Error: ')' expected.`);
       return exp;
     }
     // <unary_op> <factor>
-    else if (UnOp.is_unop(next)) {
+    else if (UnOp.is_unop(next))
+    {
       const op = next;
-      const factor = this.parseFactor();
+      const factor = this._parseFactor();
       return new UnOp(op, factor);
     }
     // <int>
-    else if (!isNaN(Number(next))) {
+    else if (!isNaN(Number(next)))
+    {
       return new Constant(Number(next))
     }
     // <id>
-    else {
-      return new Var(next);
+    else
+    {
+      return new VariableRef(next);
     }
   }
 }

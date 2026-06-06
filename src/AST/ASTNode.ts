@@ -1,9 +1,11 @@
 import { CProgram } from "./constructs/cProgram";
 
-export abstract class ASTNode {
+export abstract class ASTNode
+{
   abstract toString(): string;
 
-  print() {
+  print()
+  {
     console.log(this.toString());
   }
 }
