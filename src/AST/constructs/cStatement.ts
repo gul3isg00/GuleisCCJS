@@ -1,5 +1,5 @@
 import { CExpression } from "./cExpression";
-import { Declare } from "./types/declare";
+import { Conditional } from "./types/conditional";
 import { ReturnStatement } from "./types/returnStatement";
 
-export type CStatement = ReturnStatement | Declare | CExpression;
+export type CStatement = ReturnStatement | CExpression | Conditional;

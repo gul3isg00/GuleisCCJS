@@ -13,6 +13,6 @@ export class Program extends ASTNode
 
   toString(): string
   {
-    return `(Program | function_declaration: \n${this.function_declaration.toString()})\n\n`;
+    return `(Program | function_declaration: ${this.function_declaration.toString()})`;
   }
 }

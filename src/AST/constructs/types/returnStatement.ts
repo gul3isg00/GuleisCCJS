@@ -13,6 +13,6 @@ export class ReturnStatement extends ASTNode
 
   toString(): string
   {
-    return `{Return Statement | expression: \n${this.expression.toString()}}`;
+    return `{Return Statement | expression: ${this.expression.toString()}}`;
   }
 }

@@ -59,16 +59,16 @@ export class CodeGenerator
  pushq %rbp
  movq %rsp, %rbp`);
 
-    this._generateStatements(input.statements)
+    this._generateStatements(input.blocks)
 
     let hasReturnStatement = false;
 
     // Main needs to return a 0.
     if (input.name = "main")
     {
-      for (let x = 0; x != input.statements.length; x++)
+      for (let x = 0; x != input.blocks.length; x++)
       {
-        if (input.statements[x] instanceof ReturnStatement)
+        if (input.blocks[x] instanceof ReturnStatement)
         {
           hasReturnStatement = true;
           break;

@@ -15,6 +15,6 @@ export class Declare extends ASTNode
 
   toString(): string
   {
-    return `(Declare | string: \n${this.str})\n\n`;
+    return `(Declare | string: ${this.str}, expression: ${this.expression?.toString()})`;
   }
 }

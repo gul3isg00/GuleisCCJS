@@ -15,6 +15,6 @@ export class Assign extends ASTNode
 
   toString(): string
   {
-    return `(Assign | string: \n${this.str})\n\n`;
+    return `(Assign | string: ${this.str}, expression: ${this.expression})`;
   }
 }

@@ -7,7 +7,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-const DEBUG_MODE = false;
+const DEBUG_MODE = true;
 
 export class GuleisCCJS
 {
@@ -62,9 +62,9 @@ export class GuleisCCJS
 
       if (DEBUG_MODE) parsed.print();
 
-      this.generator.generate(parsed);
+      // this.generator.generate(parsed);
 
-      await this.assembly_to_machine_code(this.source);
+      // await this.assembly_to_machine_code(this.source);
     }
   }
 }
