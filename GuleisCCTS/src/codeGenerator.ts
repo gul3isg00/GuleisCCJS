@@ -20,30 +20,21 @@ import { ConditionalExpression } from "./AST/constructs/types/conditionalExpress
 const NUM_OF_BYTES: number = 8;
 const ESP: number = 0;
 
-export class CodeGenerator
+export abstract class CodeGenerator
 {
-  save_location: string;
   variable_map: { [key: string]: number };
   stack_index: number = ESP - NUM_OF_BYTES;
 
   label_counter: number = 0;
 
-  constructor(save_location: string)
+  constructor()
   {
-    this.save_location = save_location.replace(".c", ".s");
     this.variable_map = {}
   }
 
-  emit(input: string)
-  {
-    fs.appendFileSync(this.save_location, input + "\n");
-  }
+  abstract emit(input: string): void;
 
-  generate(input: ASTNode)
-  {
-    fs.writeFileSync(this.save_location, "");
-    this._generateProgram(input as CProgram);
-  }
+  abstract generate(input: ASTNode): void;
 
   _generateProgram(input: CProgram)
   {

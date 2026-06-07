@@ -1,6 +1,7 @@
 import { Lexer } from "./lexer";
 import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
+import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 
 const DEBUG_MODE = false;
 
@@ -14,7 +15,7 @@ export class GuleisCCTS
   {
     this.lexer = new Lexer();
     this.parser = new Parser();
-    this.generator = new CodeGenerator("");
+    this.generator = new CodeGeneratorLocal("");
   }
 
   async _compile(rawCode: string)

@@ -3,6 +3,7 @@ import { CodeGenerator } from "./codeGenerator";
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { GuleisCCTS } from "./compiler";
+import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 
 const execAsync = promisify(exec);
 
@@ -18,7 +19,7 @@ export class GuleisCCTSLocal extends GuleisCCTS
     {
         super();
         this.source = source_file ?? "";
-        this.generator = new CodeGenerator(this.source);
+        this.generator = new CodeGeneratorLocal(this.source);
     }
 
     read_file(source_file?: string): string
