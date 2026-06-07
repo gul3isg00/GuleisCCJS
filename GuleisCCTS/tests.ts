@@ -1,7 +1,8 @@
-import { GuleisCCJS } from "./src/compiler";
+import { GuleisCCTS } from "./src/compiler";
 import fs from "fs";
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { GuleisCCTSLocal } from "./src/guleisCCTSLocal";
 
 const execAsync = promisify(exec);
 
@@ -61,12 +62,12 @@ async function iterate_through_files(stage: number, main_path: string, extra_pat
     const executablePath = cur_file_path + file.replace(".c", "");
     const oracleExecutablePath = cur_file_path + file.replace(".c", "_oracle"); // GCC's binary
 
-    let current_stage = "Compiling to Assembly (GuleisCCJS)";
+    let current_stage = "Compiling to Assembly (GuleisCCTS)";
     try
     {
       console.log(`\n(Stage ${stage} - ${extra_path}) ${file}.`);
 
-      const compiler = new GuleisCCJS(fullFilePath);
+      const compiler = new GuleisCCTSLocal(fullFilePath);
       await compiler.compile();
 
       if (extra_path.includes("invalid"))
