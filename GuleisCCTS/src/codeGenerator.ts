@@ -16,6 +16,7 @@ import { VariableRef } from "./AST/constructs/types/variable_Ref";
 import { CBlock } from "./AST/constructs/cBlock";
 import { Conditional } from "./AST/constructs/types/conditional";
 import { ConditionalExpression } from "./AST/constructs/types/conditionalExpression";
+import { Compound } from "./AST/constructs/types/compound";
 
 const NUM_OF_BYTES: number = 8;
 const ESP: number = 0;
@@ -92,10 +93,19 @@ ${input.name}:                              ; label for ${input.name}
     } else if (input instanceof Conditional)
     {
       this._generateConditional(input as Conditional)
-    } else
+    } else if (input instanceof Compound)
+    {
+      this._generateCompound(input as Compound);
+    }
+    else 
     {
       this._generateExpression(input as CExpression)
     }
+  }
+
+  _generateCompound(comp: Compound)
+  {
+    this._generateBlocks(comp.blocks);
   }
 
   _generateReturnStatement(retState: ReturnStatement)

@@ -16,6 +16,7 @@ import { Conditional } from "./AST/constructs/types/conditional";
 import { CDeclaration } from "./AST/constructs/cDeclaration";
 import { CBlock } from "./AST/constructs/cBlock";
 import { ConditionalExpression } from "./AST/constructs/types/conditionalExpression";
+import { Compound } from "./AST/constructs/types/compound";
 
 const DEBUG_MODE = false;
 
@@ -78,28 +79,8 @@ export class Parser
 
     this.expect("(");
     this.expect(")");
-    this.expect("{");
 
-    let next = this.peek();
-
-    let blocks: CStatement[] = []
-
-    while (next != "}")
-    {
-      const block = this._parseBlock();
-
-      blocks.push(block);
-
-      next = this.peek();
-      if (next == null)
-      {
-        throw new Error(`Syntax Error: Expected: "}"`);
-      }
-    }
-
-    this.expect("}");
-
-    return new FunctionDeclaration(identifier, blocks);
+    return new FunctionDeclaration(identifier, (this._parseStatement() as Compound).blocks);
   }
 
   //<block-item> ::= <statement> | <declaration>
@@ -116,12 +97,14 @@ export class Parser
     }
   }
 
-  // <statement>  ::= "return" <exp> ";"
-  // | <exp> ";"
-  // | "if" "(" <exp> ")" <statement> [ "else" <statement> ]
+  // <statement> ::= "return" <exp> ";"
+  //               | <exp> ";"
+  //               | "if" "(" <exp> ")" <statement> [ "else" <statement> ]
+  //               | "{" { <block-item> } "}
   _parseStatement(): CStatement
   {
     const token = this.peek()
+
 
     switch (token)
     {
@@ -132,7 +115,7 @@ export class Parser
         this.expect(";");
         return retState;
 
-      // Conditinal
+      // Conditional
       case ("if"):
         this.consume();
         this.expect("(")
@@ -151,6 +134,26 @@ export class Parser
         {
           return new Conditional(cond_exp, cond_statement);
         }
+
+      // Compound
+      case ("{"):
+        this.consume();
+        let next = this.peek();
+        let blocks = [];
+
+        while (next != "}")
+        {
+          blocks.push(this._parseBlock());
+          next = this.peek();
+          if (next == null)
+          {
+            throw new Error(`Syntax Error: Missing }`)
+          }
+        }
+
+        this.expect("}");
+
+        return new Compound(blocks);
 
       // Generic expression.
       default:

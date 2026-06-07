@@ -75,6 +75,7 @@ function App()
     try
     {
       const result: any = await compiler.compile(sourceCode);
+      console.log(result);
 
       if (result && result.success)
       {

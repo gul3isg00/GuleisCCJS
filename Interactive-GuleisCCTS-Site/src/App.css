@@ -81,6 +81,7 @@
 
 .output-area {
   background: var(--code-bg);
+  white-space: nowrap;
 }
 
 .middle-panel {
