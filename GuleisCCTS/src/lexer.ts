@@ -4,7 +4,7 @@ export class Lexer
 
   constructor()
   {
-    this.lex_regex = /\/\/|\n|--|\+\+|\^=|\|=|&=|>>=|<<=|%=|\*=|\/=|-=|\+=|<<|>>|>=|>|<=|<|!=|==|=|\|\||&&|\/|\*|\+|,|-|~|!|{|}|\(|\)|;|\||&|\^|\bint\b|\breturn\b|\bif\b|\belse\b|:|\?|[a-zA-Z]\w*|[0-9]+/g;
+    this.lex_regex = /\/\/|\n|--|\+\+|\^=|\|=|&=|>>=|<<=|%=|\*=|\/=|-=|\+=|<<|>>|>=|>|<=|<|!=|==|=|\|\||&&|\/|\*|\+|,|-|~|!|{|}|\(|\)|;|\||&|\^|\bint\b|\breturn\b|\bif\b|\belse\b|\bfor\b|\bwhile\b|\bdo\b|\bbreak\b|\bcontinue\b|:|\?|[a-zA-Z]\w*|[0-9]+/g;
   }
 
   lex(input: string): RegExpMatchArray | null

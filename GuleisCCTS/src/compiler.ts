@@ -4,6 +4,7 @@ import { CodeGenerator } from "./codeGenerator";
 import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 
 const DEBUG_MODE = false;
+const DO_CODE_GENERATION = false;
 
 export class GuleisCCTS
 {
@@ -31,7 +32,9 @@ export class GuleisCCTS
       const parsed = this.parser.parse(tokens);
       if (DEBUG_MODE) parsed.print();
 
-      const compiled = this.generator.generate(parsed);
+      let compiled = "Assembly Code Generation disabled."
+
+      if (DO_CODE_GENERATION) compiled = this.generator.generate(parsed);
 
       return {
         success: true,

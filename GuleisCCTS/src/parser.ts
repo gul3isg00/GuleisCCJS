@@ -17,6 +17,13 @@ import { CDeclaration } from "./AST/constructs/cDeclaration";
 import { CBlock } from "./AST/constructs/cBlock";
 import { ConditionalExpression } from "./AST/constructs/types/conditionalExpression";
 import { Compound } from "./AST/constructs/types/compound";
+import { Exp } from "./AST/constructs/types/exp";
+import { While } from "./AST/constructs/types/while";
+import { Do } from "./AST/constructs/types/do";
+import { Break } from "./AST/constructs/types/break";
+import { Continue } from "./AST/constructs/types/continue";
+import { ForDeclaration } from "./AST/constructs/types/forDeclaration";
+import { For } from "./AST/constructs/types/for";
 
 const DEBUG_MODE = false;
 
@@ -149,9 +156,15 @@ export class Parser
   }
 
   // <statement> ::= "return" <exp> ";"
-  //               | <exp> ";"
+  //               | <exp-option> ";"
   //               | "if" "(" <exp> ")" <statement> [ "else" <statement> ]
   //               | "{" { <block-item> } "}
+  //               | "for" "(" <exp-option> ";" <exp-option> ";" <exp-option> ")" <statement>
+  //               | "for" "(" <declaration> <exp-option> ";" <exp-option> ")" <statement>
+  //               | "while" "(" <exp> ")" <statement>
+  //               | "do" <statement> "while" "(" <exp> ")" ";"
+  //               | "break" ";"
+  //               | "continue" ";"
   _parseStatement(): CStatement
   {
     const token = this.peek()
@@ -164,6 +177,11 @@ export class Parser
         const retState = new ReturnStatement(this._parseExpression());
         this.expect(";");
         return retState;
+
+      // Empty expression
+      case (";"):
+        this.consume();
+        return new Exp();
 
       // Conditional
       case ("if"):
@@ -204,6 +222,120 @@ export class Parser
         this.expect("}");
 
         return new Compound(blocks);
+
+      // For Loop
+      case ("for"):
+        this.consume();
+        this.expect("(");
+
+        if (this.peek() === "int")
+        {
+          const decl = this._parseDeclaration();
+
+          let exp_a: CExpression = new Constant(0);
+          if (this.peek() === ";")
+          {
+            this.consume();
+          }
+          else
+          {
+            exp_a = this._parseExpression();
+            this.expect(";");
+          }
+
+          let exp_b: Exp = new Exp();
+          if (this.peek() === ")")
+          {
+            this.consume();
+          }
+          else
+          {
+            exp_b = new Exp(this._parseExpression());
+            this.expect(")");
+          }
+
+          const statem = this._parseStatement();
+
+          return new ForDeclaration(decl, exp_a, exp_b, statem);
+        }
+        else
+        {
+          let init_exp: CExpression = new Constant(0);
+          if (this.peek() === ";")
+          {
+            this.consume();
+          }
+          else
+          {
+            init_exp = this._parseExpression();
+            this.expect(";");
+          }
+
+          let cond_exp: CExpression = new Constant(0);
+          if (this.peek() == ";")
+          {
+            this.consume();
+          }
+          else
+          {
+            cond_exp = this._parseExpression();
+            this.expect(";");
+          }
+
+          let post_exp: Exp = new Exp();
+          if (this.peek() === ")")
+          {
+            this.consume();
+          }
+          else
+          {
+            post_exp = new Exp(this._parseExpression());
+            this.expect(")");
+          }
+
+          const statem = this._parseStatement();
+
+          return new For(init_exp, cond_exp, post_exp, statem);
+        }
+
+      // While Loop
+      case ("while"):
+        this.consume();
+        this.expect("(");
+
+        const expr = this._parseExpression();
+
+        this.expect(")");
+
+        const stat = this._parseStatement();
+
+        return new While(expr, stat);
+
+      case ("do"):
+        this.consume();
+
+        const state = this._parseStatement();
+
+        this.expect("while");
+        this.expect("(");
+
+        const expre = this._parseExpression();
+
+        this.expect(")");
+
+        this.expect(";");
+
+        return new Do(state, expre);
+
+      case ("break"):
+        this.consume();
+        this.expect(";");
+        return new Break;
+
+      case ("continue"):
+        this.consume();
+        this.expect(";");
+        return new Continue;
 
       // Generic expression.
       default:

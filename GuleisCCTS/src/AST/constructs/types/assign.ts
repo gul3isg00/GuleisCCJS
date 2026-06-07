@@ -21,7 +21,7 @@ export class Assign extends ASTNode
   toTree(): TreeVisualizerNode
   {
     return {
-      name: "Constant",
+      name: "Assign",
       attributes: { "str": this.str },
       children: [this.expression.toTree()]
     };

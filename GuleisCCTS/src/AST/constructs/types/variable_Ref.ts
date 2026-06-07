@@ -18,7 +18,7 @@ export class VariableRef extends ASTNode
   toTree(): TreeVisualizerNode
   {
     return {
-      name: "BinOp",
+      name: "VariableRef",
       attributes: { "str": this.str },
     };
   }
