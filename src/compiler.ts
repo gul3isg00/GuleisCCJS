@@ -7,7 +7,10 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
+
+// Necessary for the test script to run properly.
+const COMPILE_TO_MACHINE_CODE = true;
 
 export class GuleisCCJS
 {
@@ -62,9 +65,9 @@ export class GuleisCCJS
 
       if (DEBUG_MODE) parsed.print();
 
-      // this.generator.generate(parsed);
+      this.generator.generate(parsed);
 
-      // await this.assembly_to_machine_code(this.source);
+      if (COMPILE_TO_MACHINE_CODE) await this.assembly_to_machine_code(this.source);
     }
   }
 }

@@ -6,9 +6,9 @@ export class ConditionalExpression extends ASTNode
 {
     condition: CExpression;
     if_statement: CExpression;
-    else_statement?: CExpression;
+    else_statement: CExpression;
 
-    constructor(condition: CExpression, if_statement: CExpression, else_statement?: CExpression)
+    constructor(condition: CExpression, if_statement: CExpression, else_statement: CExpression)
     {
         super();
         this.condition = condition;

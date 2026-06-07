@@ -102,6 +102,20 @@ export class Parser
     return new FunctionDeclaration(identifier, blocks);
   }
 
+  //<block-item> ::= <statement> | <declaration>
+  _parseBlock(): CBlock
+  {
+    const next = this.peek();
+
+    if (next == "int")
+    {
+      return this._parseDeclaration();
+    } else
+    {
+      return this._parseStatement();
+    }
+  }
+
   // <statement>  ::= "return" <exp> ";"
   // | <exp> ";"
   // | "if" "(" <exp> ")" <statement> [ "else" <statement> ]
@@ -151,12 +165,13 @@ export class Parser
   {
     this.expect("int");
 
-    const varRef = this._parseExpression() as VariableRef;
+    const varRef = this.consume();
 
     if (varRef == null)
     {
       throw new Error(`Syntax Error: Expected identifier.`);
     }
+
 
     const next = this.peek();
 
@@ -168,26 +183,12 @@ export class Parser
 
       this.expect(";");
 
-      return new Declare(varRef.str, value);
+      return new Declare(varRef, value);
     } else
     {
       this.expect(";");
 
-      return new Declare(varRef.str);
-    }
-  }
-
-  //<block-item> ::= <statement> | <declaration>
-  _parseBlock(): CBlock
-  {
-    const next = this.peek();
-
-    if (next == "int")
-    {
-      return this._parseDeclaration();
-    } else
-    {
-      return this._parseStatement();
+      return new Declare(varRef);
     }
   }
 

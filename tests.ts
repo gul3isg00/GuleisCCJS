@@ -25,7 +25,18 @@ async function run_tests(start_stages: number, stages: number)
     for (let y = 0; y < 2; y++)
     {
       const extra_path = y === 0 ? "valid" : "invalid";
-      await iterate_through_files(x, file_path, extra_path);
+
+      if (x == 6)
+      {
+        for (let z = 0; z != 2; z++)
+        {
+          const special_extra_path = z === 0 ? "expression" : "statement";
+          await iterate_through_files(x, file_path, extra_path + "/" + special_extra_path);
+        }
+      } else
+      {
+        await iterate_through_files(x, file_path, extra_path);
+      }
     }
   }
   console.log(`\n---------------------------`);
@@ -58,7 +69,7 @@ async function iterate_through_files(stage: number, main_path: string, extra_pat
       const compiler = new GuleisCCJS(fullFilePath);
       await compiler.compile();
 
-      if (extra_path === "invalid")
+      if (extra_path.includes("invalid"))
       {
         console.log(` - ${current_stage} ❌ (Compiled when it should have failed)`);
         continue;
@@ -101,7 +112,7 @@ async function iterate_through_files(stage: number, main_path: string, extra_pat
 
     } catch (error: any)
     {
-      if (extra_path === "invalid")
+      if (extra_path.includes("invalid"))
       {
         if (error.message && error.message.includes("Command failed: gcc"))
         {
