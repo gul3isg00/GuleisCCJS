@@ -68,7 +68,12 @@ async function iterate_through_files(stage: number, main_path: string, extra_pat
       console.log(`\n(Stage ${stage} - ${extra_path}) ${file}.`);
 
       const compiler = new GuleisCCTSLocal(fullFilePath);
-      await compiler.compile();
+      const result = await compiler.compile();
+
+      if (result.success == false)
+      {
+        throw new Error(result.error);
+      }
 
       if (extra_path.includes("invalid"))
       {

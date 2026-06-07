@@ -1,5 +1,4 @@
 import fs from "fs";
-import { CodeGenerator } from "./codeGenerator";
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { GuleisCCTS } from "./compiler";
@@ -41,12 +40,13 @@ export class GuleisCCTSLocal extends GuleisCCTS
         await execAsync(`gcc ${source} -o ${source.replace(".c", "")}`);
     }
 
-    async compile()
+    async compile(): Promise<any>
     {
         if (this.source)
         {
-            await this._compile(this.read_file(this.source))
-            if (COMPILE_TO_MACHINE_CODE) await this._assembly_to_machine_code(this.source);
+            const result = await this._compile(this.read_file(this.source));
+            if (COMPILE_TO_MACHINE_CODE && result.success) await this._assembly_to_machine_code(this.source);
+            return result;
         } else
         {
             throw new Error(`Configuration Error: No source file specified.`)

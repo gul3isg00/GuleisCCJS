@@ -21,16 +21,54 @@ import { Compound } from "./AST/constructs/types/compound";
 const NUM_OF_BYTES: number = 8;
 const ESP: number = 0;
 
+class VariableMap
+{
+  private scopes: { [key: string]: number }[] = [{}];
+  private currentStackIndex: number = ESP - NUM_OF_BYTES;
+
+  enterScope()
+  {
+    this.scopes.push({});
+  }
+
+  exitScope()
+  {
+    this.scopes.pop();
+  }
+
+  addVariable(name: string): number
+  {
+    const currentScope = this.scopes[this.scopes.length - 1];
+
+    if (name in currentScope)
+    {
+      throw new Error(`Semantic Error: Variable ${name} defined more than once in this scope.`);
+    }
+
+    currentScope[name] = this.currentStackIndex;
+    this.currentStackIndex -= NUM_OF_BYTES;
+    return currentScope[name];
+  }
+
+  lookup(name: string): number | null
+  {
+    for (let i = this.scopes.length - 1; i >= 0; i--)
+    {
+      if (name in this.scopes[i]) return this.scopes[i][name];
+    }
+    throw new Error(`Semantic Error: Variable ${name} not defined.  `);
+  }
+}
+
 export abstract class CodeGenerator
 {
-  variable_map: { [key: string]: number };
-  stack_index: number = ESP - NUM_OF_BYTES;
 
   label_counter: number = 0;
+  variable_map: VariableMap;
 
   constructor()
   {
-    this.variable_map = {}
+    this.variable_map = new VariableMap();
   }
 
   abstract emit(input: string): void;
@@ -39,6 +77,7 @@ export abstract class CodeGenerator
 
   _generateProgram(input: CProgram)
   {
+    this.variable_map = new VariableMap();
     this._generateFunction(input.function_declaration as FunctionDeclaration);
   }
 
@@ -49,7 +88,9 @@ ${input.name}:                              ; label for ${input.name}
  pushq %rbp                         ; save base pointer
  movq %rsp, %rbp                    ; set base pointer to stack pointer`);
 
+    this.variable_map.enterScope();
     this._generateBlocks(input.blocks)
+    this.variable_map.exitScope();
 
     let hasReturnStatement = false;
 
@@ -105,7 +146,9 @@ ${input.name}:                              ; label for ${input.name}
 
   _generateCompound(comp: Compound)
   {
+    this.variable_map.enterScope();
     this._generateBlocks(comp.blocks);
+    this.variable_map.exitScope();
   }
 
   _generateReturnStatement(retState: ReturnStatement)
@@ -139,10 +182,7 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
   _generateDeclare(dec: Declare)
   {
-    if (this.variable_map[dec.str] != null)
-    {
-      throw new Error(`Semantic Error: Variable ${dec.str} defined more than once.`);
-    }
+    this.variable_map.addVariable(dec.str);
 
     if (dec.expression)
     {
@@ -153,10 +193,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
     }
 
     this.emit(` pushq %rax                         ; push rax onto the stack`);
-
-    this.variable_map[dec.str] = this.stack_index;
-
-    this.stack_index -= NUM_OF_BYTES;
   }
 
   _generateExpression(input: CExpression)
@@ -203,24 +239,24 @@ _cond_${id}:                             ; label for _cond_${id}`);
   _generateAssign(ass: Assign)
   {
 
-    if (!this.variable_map[ass.str])
+    if (!this.variable_map.lookup(ass.str))
     {
       throw new Error(`Semantic Error: Undeclared identifier '${ass.str}'`);
     }
 
     this._generateExpression(ass.expression);
-    const offset = this.variable_map[ass.str];
+    const offset = this.variable_map.lookup(ass.str);
     this.emit(` movl %eax, ${offset}(%rbp)                ; move eax into local variable at offset ${offset}`);
   }
 
   _generateVariableRef(varRef: VariableRef)
   {
-    if (!this.variable_map[varRef.str])
+    if (!this.variable_map.lookup(varRef.str))
     {
       throw new Error(`Semantic Error: Undeclared identifier '${varRef.str}'`);
     }
 
-    const offset = this.variable_map[varRef.str];
+    const offset = this.variable_map.lookup(varRef.str);
     this.emit(` movl ${offset}(%rbp), %eax                ; move local variable at offset ${offset} into eax`);
   }
 

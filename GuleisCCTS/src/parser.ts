@@ -24,22 +24,62 @@ export class Parser
 {
   tokens: string[];
   current: number;
+  line_number: number;
 
   constructor()
   {
     this.tokens = [];
     this.current = 0;
+    this.line_number = 0;
   }
 
-  peek(): string
+  private skipGarbage(): void
   {
+    while (this.tokens[this.current] == "\n" || this.tokens[this.current] == "//")
+    {
+      if (this.tokens[this.current] == "\n")
+      {
+        this.line_number++;
+        this.current++;
+      }
+      else if (this.tokens[this.current] == "//")
+      {
+        if (DEBUG_MODE) console.log("Skipping comment...");
+        while (this.tokens[this.current] != null && this.tokens[this.current] != "\n")
+        {
+          this.current++;
+        }
+      }
+    }
+  }
+
+  isAtEnd(): boolean 
+  {
+    this.skipGarbage();
+    return this.current >= this.tokens.length || this.tokens[this.current] == null;
+  }
+
+  throwError(str: string)
+  {
+    throw new Error(`${str} (Line ${this.line_number})`);
+  }
+
+  peek(): string 
+  {
+    this.skipGarbage();
+    if (!this.tokens[this.current]) this.throwError("Malformed.")
     return this.tokens[this.current];
   }
 
   consume(): string
   {
-    if (DEBUG_MODE) console.log(`Consuming ${this.tokens[this.current]}`);
-    return this.tokens[this.current++];
+    this.skipGarbage();
+
+    const token = this.tokens[this.current];
+    if (DEBUG_MODE) console.log(`Consuming ${token}`);
+
+    this.current++;
+    return token;
   }
 
   parse(tokens: string[]): ASTNode
@@ -48,25 +88,36 @@ export class Parser
     this.current = 0;
 
     // Start parsing. The root is always a 'Program'.
-    return this._parseProgram();
+    const root = this._parseProgram();
+
+    if (!this.isAtEnd())
+    {
+      this.throwError(`Unexpected token after program end: '${this.tokens[this.current]}'`);
+    }
+
+    return root;
   }
 
   expect(expected: string)
   {
     const token = this.peek();
-    if (DEBUG_MODE) console.log(`Expecting ${token} === ${expected}`);
+    if (DEBUG_MODE) console.log(`Expecting ${token} == ${expected} `);
     if (token === expected)
     {
-      if (DEBUG_MODE) console.log(` - MATCH, returning ${token}`)
+      if (DEBUG_MODE) console.log(` - MATCH, returning ${token} `)
       return this.consume();
     }
-    throw new Error(`Syntax Error: Expected '${expected}' but got '${token}'`);
+    this.throwError(`Expected '${expected}' but got '${token}'`);
   }
 
   // <program> ::= <function>
   _parseProgram(): CProgram
   {
+    this.line_number = 0;
+
     const funcDec = this._parseFunction();
+
+
     return new Program(funcDec);
   }
 
@@ -104,7 +155,6 @@ export class Parser
   _parseStatement(): CStatement
   {
     const token = this.peek()
-
 
     switch (token)
     {
@@ -147,7 +197,7 @@ export class Parser
           next = this.peek();
           if (next == null)
           {
-            throw new Error(`Syntax Error: Missing }`)
+            this.throwError(`Missing }`)
           }
         }
 
@@ -172,7 +222,7 @@ export class Parser
 
     if (varRef == null)
     {
-      throw new Error(`Syntax Error: Expected identifier.`);
+      this.throwError(`Expected identifier.`);
     }
 
 
@@ -312,7 +362,7 @@ export class Parser
     if (next == "(")
     {
       const exp = this._parseExpression()
-      if (this.consume() != ")") throw new Error(`Syntax Error: ')' expected.`);
+      if (this.consume() != ")") this.throwError(`')' expected.`);
       parsedFactor = exp;
     }
 

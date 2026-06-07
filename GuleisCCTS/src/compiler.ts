@@ -3,7 +3,7 @@ import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 export class GuleisCCTS
 {

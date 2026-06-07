@@ -10,7 +10,6 @@ export class CodeGeneratorLocal extends CodeGenerator
     {
         super();
         this.save_location = save_location.replace(".c", ".s");
-        this.variable_map = {}
     }
 
     emit(input: string)
