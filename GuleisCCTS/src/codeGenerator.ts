@@ -34,7 +34,7 @@ export abstract class CodeGenerator
 
   abstract emit(input: string): void;
 
-  abstract generate(input: ASTNode): void;
+  abstract generate(input: ASTNode): string;
 
   _generateProgram(input: CProgram)
   {

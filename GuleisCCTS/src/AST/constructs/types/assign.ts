@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 
 export class Assign extends ASTNode
@@ -16,5 +16,14 @@ export class Assign extends ASTNode
   toString(): string
   {
     return `(Assign | string: ${this.str}, expression: ${this.expression})`;
+  }
+
+  toTree(): TreeVisualizerNode
+  {
+    return {
+      name: "Constant",
+      attributes: { "str": this.str },
+      children: [this.expression.toTree()]
+    };
   }
 }

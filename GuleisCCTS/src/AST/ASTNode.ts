@@ -1,6 +1,14 @@
+export interface TreeVisualizerNode
+{
+  name: string;
+  attributes?: Record<string, any>;
+  children?: TreeVisualizerNode[];
+}
+
 export abstract class ASTNode
 {
   abstract toString(): string;
+  abstract toTree(): TreeVisualizerNode;
 
   print()
   {

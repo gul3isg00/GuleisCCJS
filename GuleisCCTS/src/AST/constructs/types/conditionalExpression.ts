@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 import { CStatement } from "../cStatement";
 
@@ -19,5 +19,13 @@ export class ConditionalExpression extends ASTNode
     toString(): string
     {
         return `{ConditionalExpression | condition: ${this.condition.toString()}, if: ${this.if_statement.toString()}, else: ${this.else_statement?.toString()}}`;
+    }
+
+    toTree(): TreeVisualizerNode
+    {
+        return {
+            name: "ConditionalExpression",
+            children: [this.condition.toTree(), this.if_statement.toTree(), this.else_statement.toTree()]
+        };
     }
 }

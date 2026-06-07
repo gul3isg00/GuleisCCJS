@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 const ALLOWED_OPERATORS = ["!", "-", "~", "++", "--"];
 
@@ -28,5 +28,14 @@ export class UnOp extends ASTNode
   toString(): string
   {
     return `<UnOp | operator: ${this.operator}, expression: ${this.expression.toString()}>`;
+  }
+
+  toTree(): TreeVisualizerNode
+  {
+    return {
+      name: "UnOp",
+      attributes: { "operator": this.operator },
+      children: [this.expression.toTree()]
+    };
   }
 }

@@ -13,7 +13,7 @@ export class GuleisCCTSWeb extends GuleisCCTS
 
     async compile(input: string)
     {
-        await this._compile(input)
+        return await this._compile(input)
     }
 
 }

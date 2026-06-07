@@ -17,9 +17,10 @@ export class CodeGeneratorWeb extends CodeGenerator
         this.output += input + "\n";
     }
 
-    generate(input: ASTNode): void
+    generate(input: ASTNode): string
     {
         this.output = "";
         this._generateProgram(input as CProgram);
+        return this.output;
     }
 }

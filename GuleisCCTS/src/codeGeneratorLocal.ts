@@ -18,9 +18,10 @@ export class CodeGeneratorLocal extends CodeGenerator
         fs.appendFileSync(this.save_location, input + "\n");
     }
 
-    generate(input: ASTNode)
+    generate(input: ASTNode): string
     {
         fs.writeFileSync(this.save_location, "");
         this._generateProgram(input as CProgram);
+        return "Saved";
     }
 }

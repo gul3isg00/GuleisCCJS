@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CFunction } from "../cFunction";
 
 export class Program extends ASTNode
@@ -14,5 +14,13 @@ export class Program extends ASTNode
   toString(): string
   {
     return `(Program | function_declaration: ${this.function_declaration.toString()})`;
+  }
+
+  toTree(): TreeVisualizerNode
+  {
+    return {
+      name: "Program",
+      children: [this.function_declaration.toTree()]
+    };
   }
 }

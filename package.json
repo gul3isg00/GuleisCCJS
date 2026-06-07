@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "guleisccjs",
-    "interactive-guleisccts-site"
+    "GuleisCCTS",
+    "Interactive-GuleisCCTS-Site"
   ]
 }

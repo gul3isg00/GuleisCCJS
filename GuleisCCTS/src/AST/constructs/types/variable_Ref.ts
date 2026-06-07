@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 
 export class VariableRef extends ASTNode
 {
@@ -13,5 +13,13 @@ export class VariableRef extends ASTNode
   toString(): string
   {
     return `(VariableRef | string: ${this.str})`;
+  }
+
+  toTree(): TreeVisualizerNode
+  {
+    return {
+      name: "BinOp",
+      attributes: { "str": this.str },
+    };
   }
 }

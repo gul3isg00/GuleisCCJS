@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 
 export class ReturnStatement extends ASTNode
@@ -14,5 +14,13 @@ export class ReturnStatement extends ASTNode
   toString(): string
   {
     return `{Return Statement | expression: ${this.expression.toString()}}`;
+  }
+
+  toTree(): TreeVisualizerNode
+  {
+    return {
+      name: "ReturnStatement",
+      children: [this.expression.toTree()]
+    };
   }
 }

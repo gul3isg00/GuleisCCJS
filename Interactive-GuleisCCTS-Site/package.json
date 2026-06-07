@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "guleisccjs": "*",
+    "html-to-image": "^1.11.13",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "guleisccjs": "*"
+    "react-d3-tree": "^3.6.6",
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

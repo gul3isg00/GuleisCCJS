@@ -17,23 +17,34 @@ export class GuleisCCTS
     this.parser = new Parser();
     this.generator = new CodeGeneratorLocal("");
   }
-
   async _compile(rawCode: string)
   {
-    if (DEBUG_MODE) console.log(rawCode);
-
-    const tokens = this.lexer.lex(rawCode);
-
-    if (DEBUG_MODE) console.log(tokens);
-
-
-    if (tokens)
+    try
     {
-      const parsed = this.parser.parse(tokens);
+      if (DEBUG_MODE) console.log(rawCode);
 
+      const tokens = this.lexer.lex(rawCode);
+      if (DEBUG_MODE) console.log(tokens);
+
+      if (!tokens) throw new Error("Lexer failed to generate tokens");
+
+      const parsed = this.parser.parse(tokens);
       if (DEBUG_MODE) parsed.print();
 
-      this.generator.generate(parsed);
+      const compiled = this.generator.generate(parsed);
+
+      return {
+        success: true,
+        tokens: tokens,
+        parsed: parsed.toTree(),
+        compiled: compiled
+      }
+    } catch (err: any)
+    {
+      return {
+        success: false,
+        error: err.message
+      }
     }
   }
 }

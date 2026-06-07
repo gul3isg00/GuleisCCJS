@@ -1,4 +1,4 @@
-import { ASTNode } from "../../ASTNode";
+import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CExpression } from "../cExpression";
 
 const ALLOWED_OPERATORS = ["%", "&", "|", "^", "<<", ">>", "+", "-", "/", "*", "==", "!=", "&&", "||", "<=", ">=", ">", "<", "+=", "-=", "/=", "*=", "%=", "<<=", ">>=", "&=", "|=", "^=", ","];
@@ -26,5 +26,14 @@ export class BinOp extends ASTNode
     toString(): string
     {
         return `<BinOp | binary_operator: ${this.binary_operator}, expression_a: ${this.expression_a.toString()}, expression_b: ${this.expression_b.toString()}>`;
+    }
+
+    toTree(): TreeVisualizerNode
+    {
+        return {
+            name: "BinOp",
+            attributes: { "binary_operator": this.binary_operator },
+            children: [this.expression_a.toTree(), this.expression_b.toTree()]
+        };
     }
 }
