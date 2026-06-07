@@ -8,7 +8,7 @@ The idea is to write a TypeScript (TS) C compiler, which compiles C to x86-64 as
 In this implementation after compiling to assembly, gcc is automatically used to finish the job, translating the assembly to machine code.
 
 
-In future I hope to also integrate this with a web-based GUI so I can visualise the compilation for educational purposes.
+For educational purposes, I have also created a React/Vite webapp which hooks into the compiler to demonstrate how they work.
 
 
 For anyone wishing to try something similar themselves, I am heavily following the guide written by **Nora Sandler**. (https://norasandler.com/2017/11/29/Write-a-Compiler.html)
