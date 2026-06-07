@@ -1,18 +1,9 @@
 {
-  "name": "guleisccjs",
+  "name": "guleis-workspace",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "ts-node tests.ts",
-    "start": "ts-node index.ts",
-    "build": "tsc"
-  },
-  "author": "Aiden Baker-Stanley",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@types/node": "^25.9.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
-  }
+  "private": true,
+  "workspaces": [
+    "guleisccjs",
+    "interactive-guleisccts-site"
+  ]
 }
