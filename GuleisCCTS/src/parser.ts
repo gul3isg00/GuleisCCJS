@@ -24,8 +24,21 @@ import { Break } from "./AST/constructs/types/break";
 import { Continue } from "./AST/constructs/types/continue";
 import { ForDeclaration } from "./AST/constructs/types/forDeclaration";
 import { For } from "./AST/constructs/types/for";
+import { FunctionCall } from "./AST/constructs/types/functionCall";
 
 const DEBUG_MODE = false;
+
+export class FunctionData
+{
+  params: string[];
+  hasBody: boolean;
+
+  constructor(params: string[], hasBody: boolean)
+  {
+    this.params = params;
+    this.hasBody = hasBody;
+  }
+}
 
 export class Parser
 {
@@ -33,11 +46,15 @@ export class Parser
   current: number;
   line_number: number;
 
+  // Should be moved to semantic analyser
+  defined_funcs: { [key: string]: FunctionData };
+
   constructor()
   {
     this.tokens = [];
     this.current = 0;
     this.line_number = 0;
+    this.defined_funcs = {};
   }
 
   private skipGarbage(): void
@@ -74,8 +91,19 @@ export class Parser
   peek(): string 
   {
     this.skipGarbage();
-    if (!this.tokens[this.current]) this.throwError("Malformed.")
+    // if (!this.tokens[this.current]) this.throwError("Malformed.")
     return this.tokens[this.current];
+  }
+
+  getNumParams(id: string): number
+  {
+    if (this.defined_funcs[id] != null)
+    {
+      return this.defined_funcs[id].params.length;
+    }
+
+    this.throwError(`Function ${id} doesn't exist.`);
+    return -1;
   }
 
   consume(): string
@@ -117,15 +145,23 @@ export class Parser
     this.throwError(`Expected '${expected}' but got '${token}'`);
   }
 
-  // <program> ::= <function>
+  //<program> ::= { <function> }
   _parseProgram(): CProgram
   {
     this.line_number = 0;
+    this.defined_funcs = {};
 
-    const funcDec = this._parseFunction();
+    let functions: CFunction[] = [];
 
+    let next = this.peek();
 
-    return new Program(funcDec);
+    while (next == "int")
+    {
+      functions.push(this._parseFunction());
+      next = this.peek();
+    }
+
+    return new Program(functions);
   }
 
   // <function> ::= "int" <id> "(" [ "int" <id> { "," "int" <id> } ] ")" ( "{" { <block-item> } "}" | ";" )
@@ -136,7 +172,6 @@ export class Parser
     const identifier = this.consume();
 
     this.expect("(");
-
 
     let next = this.peek();
 
@@ -153,6 +188,14 @@ export class Parser
       if (next == ",") { this.consume(); next = this.peek(); }
     }
 
+    if (this.defined_funcs[identifier] && this.defined_funcs[identifier].params.length != params.length)
+    {
+      this.throwError(`Parameter mismatch for function ${identifier}`);
+    } else if (!this.defined_funcs[identifier])
+    {
+      this.defined_funcs[identifier] = new FunctionData(params, false);
+    }
+
     this.expect(")");
 
     if (this.peek() == ";")
@@ -161,7 +204,13 @@ export class Parser
       return new FunctionDeclaration(identifier, [], params);
     }
 
-    return new FunctionDeclaration(identifier, (this._parseStatement() as Compound).blocks, params);
+    if (this.defined_funcs[identifier] && this.defined_funcs[identifier].hasBody)
+    {
+      this.throwError(`Function ${identifier} defined twice.`)
+    }
+
+    this.defined_funcs[identifier].hasBody = true;
+    return new FunctionDeclaration(identifier, (this._parseStatement() as Compound).blocks, params);;
   }
 
   //<block-item> ::= <statement> | <declaration>
@@ -507,7 +556,40 @@ export class Parser
     return expression;
   }
 
-  // <factor> ::= "(" <exp> ")" | <unary_op> <factor> | <int> | <id>
+  // <function-call> ::= id "(" [ <exp> { "," <exp> } ] ")"
+  _parseFunctionCall(id: string): CExpression
+  {
+    this.expect("(");
+
+    const numParams: number = this.getNumParams(id);
+
+    let params: CExpression[] = [];
+
+    let next = this.peek();
+
+    while (next != ")")
+    {
+      params.push(this._parseExpression());
+      next = this.peek();
+
+      if (next == ",")
+      {
+        this.consume();
+        next = this.peek();
+      }
+    }
+
+    if (params.length != numParams)
+    {
+      this.throwError(`Bad parameters for function ${id}`);
+    }
+
+    this.expect(")");
+
+    return new FunctionCall(id, params);
+  }
+
+  // <factor> ::= <function-call> | "(" <exp> ")" | <unary_op> <factor> | <int> | <id>
   _parseFactor(): CExpression
   {
     const next = this.consume();
@@ -535,10 +617,16 @@ export class Parser
     {
       parsedFactor = new Constant(Number(next))
     }
-    // <id>
+    // <id> OR function call
     else
     {
-      parsedFactor = new VariableRef(next);
+      if (this.peek() == "(")
+      {
+        parsedFactor = this._parseFunctionCall(next);
+      } else
+      {
+        parsedFactor = new VariableRef(next);
+      }
     }
 
     // POSTFIX

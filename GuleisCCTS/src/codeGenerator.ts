@@ -23,14 +23,30 @@ import { While } from "./AST/constructs/types/while";
 import { Do } from "./AST/constructs/types/do";
 import { Break } from "./AST/constructs/types/break";
 import { Continue } from "./AST/constructs/types/continue";
+import { FunctionCall } from "./AST/constructs/types/functionCall";
 
 const NUM_OF_BYTES: number = 8;
 const ESP: number = 0;
+
+const argRegisters = ["%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"];
 
 class VariableMap
 {
   private scopes: { [key: string]: number }[] = [{}];
   private currentStackIndex: number = ESP - NUM_OF_BYTES;
+
+
+  enterFunction()
+  {
+    this.scopes = [this.scopes[0], {}];
+
+    this.currentStackIndex = ESP - NUM_OF_BYTES;
+  }
+
+  exitFunction()
+  {
+    this.scopes = [this.scopes[0]];
+  }
 
   enterScope()
   {
@@ -39,7 +55,13 @@ class VariableMap
 
   exitScope()
   {
-    this.scopes.pop();
+    if (this.scopes.length > 2)
+    {
+      this.scopes.pop();
+    } else
+    {
+      throw new Error("Compiler Error: Unbalanced exitScope calls.");
+    }
   }
 
   addVariable(name: string): number
@@ -48,29 +70,37 @@ class VariableMap
 
     if (name in currentScope)
     {
-      throw new Error(`Semantic Error: Variable ${name} defined more than once in this scope.`);
+      throw new Error(`Semantic Error: Variable '${name}' defined more than once in this scope.`);
     }
 
     currentScope[name] = this.currentStackIndex;
     this.currentStackIndex -= NUM_OF_BYTES;
+
     return currentScope[name];
   }
 
-  lookup(name: string): number | null
+  lookup(name: string): number
   {
     for (let i = this.scopes.length - 1; i >= 0; i--)
     {
-      if (name in this.scopes[i]) return this.scopes[i][name];
+      if (name in this.scopes[i])
+      {
+        return this.scopes[i][name];
+      }
     }
-    throw new Error(`Semantic Error: Variable ${name} not defined.  `);
+    throw new Error(`Semantic Error: Variable '${name}' not defined.`);
   }
 }
 
 export abstract class CodeGenerator
 {
   label_counter: number = 0;
+
+  // Should be moved to symantic analyser
   variable_map: VariableMap;
+    
   loop_stack: number[] = [];
+  current_function: string = "";
 
   constructor()
   {
@@ -83,11 +113,13 @@ export abstract class CodeGenerator
 
   _generateProgram(input: CProgram)
   {
-    this.variable_map = new VariableMap();
-    this.loop_stack = [];
-    this._generateFunction(input.function_declaration as FunctionDeclaration);
+    input.function_declaration.forEach(f =>
+    {
+      this.variable_map = new VariableMap();
+      this.loop_stack = [];
+      this._generateFunction(f)
+    });
   }
-
   _generateFunction(input: CFunction)
   {
     this.emit(`.globl ${input.name}                 ; make ${input.name} visible to linker
@@ -95,9 +127,25 @@ ${input.name}:                              ; label for ${input.name}
  pushq %rbp                         ; save base pointer
  movq %rsp, %rbp                    ; set base pointer to stack pointer`);
 
-    this.variable_map.enterScope();
+    this.variable_map.enterFunction();
+
+    if (input.params && input.params.length > 0)
+    {
+      if (input.params.length > 6)
+      {
+        throw new Error("Semantic Error: More than 6 parameters not yet supported.");
+      }
+
+      for (let i = 0; i < input.params.length; i++)
+      {
+        const paramName = input.params[i];
+        const offset = this.variable_map.addVariable(paramName);
+
+        this.emit(` movq ${argRegisters[i]}, ${offset}(%rbp)                              ; save param ${paramName}`);
+      }
+    }
+
     this._generateBlocks(input.blocks);
-    this.variable_map.exitScope();
 
     let hasReturnStatement = false;
 
@@ -117,6 +165,8 @@ ${input.name}:                              ; label for ${input.name}
         this._generateStatement(new ReturnStatement(new Constant(0)));
       }
     }
+
+    this.variable_map.exitFunction();
   }
 
   _generateBlocks(inputs: CBlock[])
@@ -363,7 +413,7 @@ ${input.name}:                              ; label for ${input.name}
   {
     const id = this.label_counter++;
     this._generateExpression(cond.expression);
-    this.emit(` cmpl $0, %eax                      ; compare eax to 0
+    this.emit(` cmpl $0, %rax                      ; compare eax to 0
  je _cond_${id}                         ; jump if equal to _cond_${id}`);
 
     this._generateStatement(cond.if_statement);
@@ -415,6 +465,10 @@ _cond_${id}:                             ; label for _cond_${id}`);
     } else if (input instanceof ConditionalExpression)
     {
       this._generateConditionalExpression(input as ConditionalExpression);
+    }
+    else if (input instanceof FunctionCall)
+    {
+      this._generateFunctionCall(input as FunctionCall);
     } else
     {
       this._generateConstant(input as Constant);
@@ -425,7 +479,7 @@ _cond_${id}:                             ; label for _cond_${id}`);
   {
     const id = this.label_counter++;
     this._generateExpression(cond.condition);
-    this.emit(` cmpl $0, %eax                      ; compare eax to 0
+    this.emit(` cmpl $0, %rax                      ; compare eax to 0
  je _cond_${id}                         ; jump if equal to _cond_${id}`);
     this._generateExpression(cond.if_statement);
     this.emit(` jmp _post_conditional_${id}            ; jump unconditionally to _post_conditional_${id}
@@ -443,7 +497,7 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
     this._generateExpression(ass.expression);
     const offset = this.variable_map.lookup(ass.str);
-    this.emit(` movl %eax, ${offset}(%rbp)                ; move eax into local variable at offset ${offset}`);
+    this.emit(` movl %rax, ${offset}(%rbp)                ; move eax into local variable at offset ${offset}`);
   }
 
   _generateVariableRef(varRef: VariableRef)
@@ -454,7 +508,7 @@ _cond_${id}:                             ; label for _cond_${id}`);
     }
 
     const offset = this.variable_map.lookup(varRef.str);
-    this.emit(` movl ${offset}(%rbp), %eax                ; move local variable at offset ${offset} into eax`);
+    this.emit(` movl ${offset}(%rbp), %rax                ; move local variable at offset ${offset} into eax`);
   }
 
   _generateUnOp(unop: UnOp)
@@ -463,13 +517,13 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
     if (unop.operator == "!")
     {
-      this.emit(` cmpl $0, %eax                      ; compare eax to 0
+      this.emit(` cmpl $0, %rax                      ; compare eax to 0
  sete %al                           ; set al to 1 if equal, 0 otherwise
- movzbl %al, %eax                   ; zero-extend al to eax`);
+ movzbl %al, %rax                   ; zero-extend al to eax`);
     } else if (unop.operator == "-")
     {
       this._generateExpression(unop.expression);
-      this.emit(` neg %eax                           ; negate eax (two's complement)`);
+      this.emit(` neg %rax                           ; negate eax (two's complement)`);
     } else if (unop.operator == "++")
     {
       this._generateExpression(new BinOp("+=", unop.expression, new Constant(1)));
@@ -478,13 +532,34 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this._generateExpression(new BinOp("-=", unop.expression, new Constant(1)));
     } else
     {
-      this.emit(` not %eax                           ; bitwise NOT on eax`);
+      this.emit(` not %rax                           ; bitwise NOT on eax`);
     }
+  }
+
+  _generateFunctionCall(fc: FunctionCall)
+  {
+    fc.params.forEach(p =>
+    {
+      this._generateExpression(p);
+      this.emit(` pushq %rax                           ; push param onto stack`);
+    });
+
+    let cur_reg = fc.params.length - 1;
+
+    for (let i = 0; i < fc.params.length; i++)
+    {
+      this.emit(` popq ${argRegisters[cur_reg]}                           ; pop into ${argRegisters[cur_reg]}`);
+      cur_reg--;
+    }
+
+    // zero out %al for functions like printf
+    this.emit(` xorq %rax, %rax                        ; clear al to 0 for variadic functions`);
+    this.emit(` call ${fc.name}`);
   }
 
   _generateConstant(con: Constant)
   {
-    this.emit(` movl \$${con.value.toString()}, %eax                ; move constant ${con.value.toString()} into eax`);
+    this.emit(` movl \$${con.value.toString()}, %rax                ; move constant ${con.value.toString()} into eax`);
   }
 
   _generateBinOp(binop: BinOp)
@@ -497,38 +572,38 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- addl %ecx, %eax                    ; add ecx to eax`);
+ addl %rcx, %rax                    ; add ecx to eax`);
     } else if (binop.binary_operator == "-")
     {
       this._generateExpression(binop.expression_b);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_a);
       this.emit(` popq %rcx                          ; pop stack into rcx
- subl %ecx, %eax                    ; subtract ecx from eax`);
+ subl %rcx, %rax                    ; subtract ecx from eax`);
     } else if (binop.binary_operator == "*")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- imul %ecx, %eax                    ; multiply eax by ecx`);
+ imul %rcx, %rax                    ; multiply eax by ecx`);
     } else if (binop.binary_operator == "/")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
-      this.emit(` movl %eax, %ebx                    ; move eax into ebx
+      this.emit(` movl %rax, %rbx                    ; move eax into ebx
  popq %rax                          ; pop stack into rax
  cltd                               ; sign-extend eax into edx:eax
- idivl %ebx                         ; divide edx:eax by ebx`);
+ idivl %rbx                         ; divide edx:eax by ebx`);
     } else if (binop.binary_operator == "==")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- cmpl %eax, %ecx                    ; compare eax and ecx
- movl $0, %eax                      ; move 0 into eax
+ cmpl %rax, %rcx                    ; compare eax and ecx
+ movl $0, %rax                      ; move 0 into eax
  sete %al                           ; set al to 1 if equal`);
     } else if (binop.binary_operator == "!=")
     {
@@ -536,8 +611,8 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- cmpl %eax, %ecx                    ; compare eax and ecx
- movl $0, %eax                      ; move 0 into eax
+ cmpl %rax, %rcx                    ; compare eax and ecx
+ movl $0, %rax                      ; move 0 into eax
  setne %al                          ; set al to 1 if not equal`);
     } else if (binop.binary_operator == "<=")
     {
@@ -545,8 +620,8 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- cmpl %eax, %ecx                    ; compare eax and ecx
- movl $0, %eax                      ; move 0 into eax
+ cmpl %rax, %rcx                    ; compare eax and ecx
+ movl $0, %rax                      ; move 0 into eax
  setle %al                          ; set al to 1 if less or equal`);
     } else if (binop.binary_operator == ">=")
     {
@@ -554,34 +629,34 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- cmpl %eax, %ecx                    ; compare eax and ecx
- movl $0, %eax                      ; move 0 into eax
+ cmpl %rax, %rcx                    ; compare eax and ecx
+ movl $0, %rax                      ; move 0 into eax
  setge %al                          ; set al to 1 if greater or equal`);
     } else if (binop.binary_operator == "&&")
     {
       const id = this.label_counter++;
       this._generateExpression(binop.expression_a);
-      this.emit(` cmpl $0, %eax                      ; compare eax to 0
+      this.emit(` cmpl $0, %rax                      ; compare eax to 0
  jne _clause2_${id}                     ; jump if not equal to _clause2_${id}
  jmp _end_${id}                         ; jump unconditionally to _end_${id}
 _clause2_${id}:                          ; label for _clause2_${id}`);
       this._generateExpression(binop.expression_b);
-      this.emit(` cmpl $0, %eax                      ; compare eax to 0
- movl $0, %eax                      ; move 0 into eax
+      this.emit(` cmpl $0, %rax                      ; compare eax to 0
+ movl $0, %rax                      ; move 0 into eax
  setne %al                          ; set al to 1 if not equal
 _end_${id}:                              ; label for _end_${id}`);
     } else if (binop.binary_operator == "||")
     {
       const id = this.label_counter++;
       this._generateExpression(binop.expression_a);
-      this.emit(` cmpl $0, %eax                      ; compare eax to 0
+      this.emit(` cmpl $0, %rax                      ; compare eax to 0
  je _clause2_${id}                      ; jump if equal to _clause2_${id}
- movl $1, %eax                      ; move 1 into eax
+ movl $1, %rax                      ; move 1 into eax
  jmp _end_${id}                         ; jump unconditionally to _end_${id}
 _clause2_${id}:                          ; label for _clause2_${id}`);
       this._generateExpression(binop.expression_b);
-      this.emit(` cmpl $0, %eax                      ; compare eax to 0
- movl $0, %eax                      ; move 0 into eax
+      this.emit(` cmpl $0, %rax                      ; compare eax to 0
+ movl $0, %rax                      ; move 0 into eax
  setne %al                          ; set al to 1 if not equal
 _end_${id}:                              ; label for _end_${id}`);
     } else if (binop.binary_operator == ">")
@@ -590,8 +665,8 @@ _end_${id}:                              ; label for _end_${id}`);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- cmpl %eax, %ecx                    ; compare eax and ecx
- movl $0, %eax                      ; move 0 into eax
+ cmpl %rax, %rcx                    ; compare eax and ecx
+ movl $0, %rax                      ; move 0 into eax
  setg %al                           ; set al to 1 if greater`);
     } else if (binop.binary_operator == ",")
     {
@@ -602,56 +677,56 @@ _end_${id}:                              ; label for _end_${id}`);
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
-      this.emit(` movl %eax, %ebx                    ; move eax into ebx
+      this.emit(` movl %rax, %rbx                    ; move eax into ebx
  popq %rax                          ; pop stack into rax
  cltd                               ; sign-extend eax into edx:eax
- idivl %ebx                         ; divide edx:eax by ebx
- movl %edx, %eax                    ; move edx into eax (remainder)`);
+ idivl %rbx                         ; divide edx:eax by ebx
+ movl %rdx, %rax                    ; move edx into eax (remainder)`);
     } else if (binop.binary_operator == "^")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- xorl %ecx, %eax                    ; bitwise XOR ecx with eax`);
+ xorl %rcx, %rax                    ; bitwise XOR ecx with eax`);
     } else if (binop.binary_operator == "|")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- orl %ecx, %eax                     ; bitwise OR ecx with eax`);
+ orl %rcx, %rax                     ; bitwise OR ecx with eax`);
     } else if (binop.binary_operator == "<<")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
-      this.emit(` movl %eax, %ecx                    ; move eax into ecx
+      this.emit(` movl %rax, %rcx                    ; move eax into ecx
  popq %rax                          ; pop stack into rax
- sall %cl, %eax                     ; shift eax left by cl bits`);
+ sall %cl, %rax                     ; shift eax left by cl bits`);
     } else if (binop.binary_operator == ">>")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
-      this.emit(` movl %eax, %ecx                    ; move eax into ecx
+      this.emit(` movl %rax, %rcx                    ; move eax into ecx
  popq %rax                          ; pop stack into rax
- sarl %cl, %eax                     ; arithmetic shift eax right by cl bits`);
+ sarl %cl, %rax                     ; arithmetic shift eax right by cl bits`);
     } else if (binop.binary_operator == "&")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- andl %ecx, %eax                    ; bitwise AND ecx with eax`);
+ andl %rcx, %rax                    ; bitwise AND ecx with eax`);
     } else if (binop.binary_operator == "<")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
- cmpl %eax, %ecx                    ; compare eax and ecx
- movl $0, %eax                      ; move 0 into eax
+ cmpl %rax, %rcx                    ; compare eax and ecx
+ movl $0, %rax                      ; move 0 into eax
  setl %al                           ; set al to 1 if less`);
     } else if (compoundAssignments.includes(binop.binary_operator))
     {

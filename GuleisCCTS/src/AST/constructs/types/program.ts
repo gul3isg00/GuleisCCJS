@@ -3,9 +3,9 @@ import { CFunction } from "../cFunction";
 
 export class Program extends ASTNode
 {
-  function_declaration: CFunction;
+  function_declaration: CFunction[];
 
-  constructor(function_declaration: CFunction)
+  constructor(function_declaration: CFunction[])
   {
     super();
     this.function_declaration = function_declaration;
@@ -13,14 +13,14 @@ export class Program extends ASTNode
 
   toString(): string
   {
-    return `(Program | function_declaration: ${this.function_declaration.toString()})`;
+    return `(Program | function_declaration: ${this.function_declaration.map(p => p.toString())})`;
   }
 
   toTree(): TreeVisualizerNode
   {
     return {
       name: "Program",
-      children: [this.function_declaration.toTree()]
+      children: this.function_declaration.map(p => p.toTree())
     };
   }
 }
