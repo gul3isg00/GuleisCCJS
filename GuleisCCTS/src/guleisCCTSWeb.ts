@@ -8,6 +8,7 @@ export class GuleisCCTSWeb extends GuleisCCTS
     {
         super();
         this.generator = new CodeGeneratorWeb();
+        this.DEBUG_MODE = true;
     }
 
 

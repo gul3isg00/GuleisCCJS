@@ -22,7 +22,7 @@ export class ForDeclaration extends ASTNode
 
     toString(): string
     {
-        return `{ForDeclaration | }`;
+        return `{ForDeclaration | initial_declaration: ${this.initial_declaration.toString()}, condition: ${this.condition.toString()}, post_exp: ${this.post_exp.toString()}, body: ${this.body.toString()}}`;
     }
 
     toTree(): TreeVisualizerNode

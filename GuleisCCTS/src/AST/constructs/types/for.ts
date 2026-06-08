@@ -21,7 +21,7 @@ export class For extends ASTNode
 
     toString(): string
     {
-        return `{For | }`;
+        return `{For| initial_exp: ${this.initial_exp.toString()}, condition: ${this.condition.toString()}, post_exp: ${this.post_exp.toString()}, body: ${this.body.toString()}}`;
     }
 
     toTree(): TreeVisualizerNode

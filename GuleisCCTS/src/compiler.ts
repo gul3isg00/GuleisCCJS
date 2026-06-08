@@ -3,14 +3,14 @@ import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 
-const DEBUG_MODE = false;
-const DO_CODE_GENERATION = false;
+const DO_CODE_GENERATION = true;
 
 export class GuleisCCTS
 {
   lexer: Lexer;
   parser: Parser;
   generator: CodeGenerator;
+  DEBUG_MODE: boolean = false;
 
   constructor()
   {
@@ -22,15 +22,15 @@ export class GuleisCCTS
   {
     try
     {
-      if (DEBUG_MODE) console.log(rawCode);
+      if (this.DEBUG_MODE) console.log(rawCode);
 
       const tokens = this.lexer.lex(rawCode);
-      if (DEBUG_MODE) console.log(tokens);
+      if (this.DEBUG_MODE) console.log(tokens);
 
       if (!tokens) throw new Error("Lexer failed to generate tokens");
 
       const parsed = this.parser.parse(tokens);
-      if (DEBUG_MODE) parsed.print();
+      if (this.DEBUG_MODE) parsed.print();
 
       let compiled = "Assembly Code Generation disabled."
 

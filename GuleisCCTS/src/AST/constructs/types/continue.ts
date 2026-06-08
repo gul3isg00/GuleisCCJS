@@ -10,7 +10,7 @@ export class Continue extends ASTNode
 
     toString(): string
     {
-        return `{Continue `;
+        return `{Continue}`;
     }
 
     toTree(): TreeVisualizerNode

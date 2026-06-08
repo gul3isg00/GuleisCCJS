@@ -10,7 +10,7 @@ export class Break extends ASTNode
 
     toString(): string
     {
-        return `{Break `;
+        return `{Break}`;
     }
 
     toTree(): TreeVisualizerNode

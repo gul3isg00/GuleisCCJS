@@ -1,5 +1,4 @@
 import { ASTNode } from "./AST/ASTNode";
-import fs from "fs";
 import { FunctionDeclaration } from "./AST/constructs/types/functionDeclaration";
 import { ReturnStatement } from "./AST/constructs/types/returnStatement";
 import { Constant } from "./AST/constructs/types/constant";
@@ -17,6 +16,13 @@ import { CBlock } from "./AST/constructs/cBlock";
 import { Conditional } from "./AST/constructs/types/conditional";
 import { ConditionalExpression } from "./AST/constructs/types/conditionalExpression";
 import { Compound } from "./AST/constructs/types/compound";
+import { Exp } from "./AST/constructs/types/exp";
+import { For } from "./AST/constructs/types/for";
+import { ForDeclaration } from "./AST/constructs/types/forDeclaration";
+import { While } from "./AST/constructs/types/while";
+import { Do } from "./AST/constructs/types/do";
+import { Break } from "./AST/constructs/types/break";
+import { Continue } from "./AST/constructs/types/continue";
 
 const NUM_OF_BYTES: number = 8;
 const ESP: number = 0;
@@ -62,9 +68,9 @@ class VariableMap
 
 export abstract class CodeGenerator
 {
-
   label_counter: number = 0;
   variable_map: VariableMap;
+  loop_stack: number[] = [];
 
   constructor()
   {
@@ -78,6 +84,7 @@ export abstract class CodeGenerator
   _generateProgram(input: CProgram)
   {
     this.variable_map = new VariableMap();
+    this.loop_stack = [];
     this._generateFunction(input.function_declaration as FunctionDeclaration);
   }
 
@@ -89,7 +96,7 @@ ${input.name}:                              ; label for ${input.name}
  movq %rsp, %rbp                    ; set base pointer to stack pointer`);
 
     this.variable_map.enterScope();
-    this._generateBlocks(input.blocks)
+    this._generateBlocks(input.blocks);
     this.variable_map.exitScope();
 
     let hasReturnStatement = false;
@@ -102,7 +109,7 @@ ${input.name}:                              ; label for ${input.name}
         {
           hasReturnStatement = true;
           break;
-        };
+        }
       }
 
       if (!hasReturnStatement)
@@ -123,25 +130,123 @@ ${input.name}:                              ; label for ${input.name}
       {
         this._generateStatement(input);
       }
-    })
+    });
   }
 
   _generateStatement(input: CStatement)
   {
+    // return
     if (input instanceof ReturnStatement)
     {
       this._generateReturnStatement(input as ReturnStatement);
-    } else if (input instanceof Conditional)
+    }
+    // (Potentially) Empty Expressions
+    else if (input instanceof Exp)
     {
-      this._generateConditional(input as Conditional)
-    } else if (input instanceof Compound)
+      const exp = input as Exp;
+      if (exp.expression != null)
+      {
+        this._generateExpression(exp.expression);
+      }
+    }
+    // Conditional statement
+    else if (input instanceof Conditional)
+    {
+      this._generateConditional(input as Conditional);
+    }
+    // Code block / compound statement
+    else if (input instanceof Compound)
     {
       this._generateCompound(input as Compound);
     }
-    else 
+    // For Loop
+    else if (input instanceof For)
     {
-      this._generateExpression(input as CExpression)
+      this._generateFor(input as For);
     }
+    // For Declaration Loop
+    else if (input instanceof ForDeclaration)
+    {
+      this._generateForDecl(input as ForDeclaration);
+    }
+    // While
+    else if (input instanceof While)
+    {
+      this._generateWhile(input as While);
+    }
+    // Do While
+    else if (input instanceof Do)
+    {
+      this._generateDo(input as Do);
+    }
+    // Break
+    else if (input instanceof Break)
+    {
+      this._generateBreak();
+    }
+    // Continue
+    else if (input instanceof Continue)
+    {
+      this._generateContinue();
+    }
+    // Expression
+    else
+    {
+      this._generateExpression(input as CExpression);
+    }
+  }
+
+  _generateWhile(whi: While)
+  {
+    const loopId = this.label_counter++;
+    this.loop_stack.push(loopId);
+
+    // Start the loop
+    this.emit(`loop_start_${loopId}:                   ; label for while loop`);
+    this.emit(`loop_continue_${loopId}:                ; continue`);
+
+    // Do the comparison
+    this._generateExpression(whi.expression);
+
+    this.emit(` testb %al, %al                  ; test the condition
+ je loop_exit_${loopId}                  ; exit the loop if condition is met`);
+
+    // Function body
+    this._generateStatement(whi.statement);
+
+    // Jump to the start
+    this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
+    // Exit
+    this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
+
+    this.loop_stack.pop();
+  }
+
+  _generateDo(doo: Do)
+  {
+    const loopId = this.label_counter++;
+    this.loop_stack.push(loopId);
+
+    // Start the loop
+    this.emit(`loop_start_${loopId}:                   ; label for do while loop`);
+
+    // Function body
+    this._generateStatement(doo.statement);
+
+    this.emit(`loop_continue_${loopId}:                ; continue goes to condition check`);
+
+    // Do the comparison
+    this._generateExpression(doo.expression);
+
+    this.emit(` testb %al, %al                  ; test the condition
+ je loop_exit_${loopId}                  ; exit the loop if condition is met`);
+
+    // Jump to the start
+    this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
+    // Exit
+    this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
+
+    this.loop_stack.pop();
   }
 
   _generateCompound(comp: Compound)
@@ -159,15 +264,113 @@ ${input.name}:                              ; label for ${input.name}
  ret                                ; return from function`);
   }
 
+  _generateFor(frStat: For)
+  {
+    const loopId = this.label_counter++;
+
+    // Generate the initial expression
+    this._generateStatement(frStat.initial_exp);
+
+    this.loop_stack.push(loopId);
+
+    // Start the loop
+    this.emit(`loop_start_${loopId}:                   ; label for for loop`);
+
+    // Generate the condition
+    this._generateExpression(frStat.condition);
+
+    // If the expression is false, exit
+    this.emit(` testb %al, %al                  ; test the condition
+ je loop_exit_${loopId}                  ; exit the loop if condition is met`);
+
+    // Generate the statement
+    this._generateStatement(frStat.body);
+
+    // In case a continue is used.
+    this.emit(`loop_continue_${loopId}:                  ; label for continue`);
+
+    // Generate the post expression
+    this._generateStatement(frStat.post_exp);
+
+    // Jump to the start
+    this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
+    // Exit
+    this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
+
+    this.loop_stack.pop();
+  }
+
+  _generateForDecl(frDecl: ForDeclaration)
+  {
+    const loopId = this.label_counter++;
+
+    this.variable_map.enterScope();
+
+    // Generate the initial expression
+    this._generateDeclaration(frDecl.initial_declaration);
+
+    this.loop_stack.push(loopId);
+
+    // Start the loop
+    this.emit(`loop_start_${loopId}:                   ; label for for loop`);
+
+    // Generate the condition
+    this._generateExpression(frDecl.condition);
+
+    // If the expression is false, exit
+    this.emit(` testb %al, %al                  ; test the condition
+ je loop_exit_${loopId}                  ; exit the loop if condition is met`);
+
+    // Generate the statement
+    this._generateStatement(frDecl.body);
+
+    // In case a continue is used.
+    this.emit(`loop_continue_${loopId}:                  ; label for continue`);
+
+    // Generate the post expression
+    this._generateStatement(frDecl.post_exp);
+
+    // Jump to the start
+    this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
+    // Exit
+    this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
+
+    this.loop_stack.pop();
+    this.variable_map.exitScope();
+  }
+
+  _generateBreak()
+  {
+    if (this.loop_stack.length === 0)
+    {
+      throw new Error(`Semantic Error: Break called outside of loop.`);
+    }
+    const currentLoopId = this.loop_stack[this.loop_stack.length - 1];
+    this.emit(` jmp loop_exit_${currentLoopId}                  ; break the loop`);
+  }
+
+  _generateContinue()
+  {
+    if (this.loop_stack.length === 0)
+    {
+      throw new Error(`Semantic Error: Continue called outside of loop.`);
+    }
+    const currentLoopId = this.loop_stack[this.loop_stack.length - 1];
+    this.emit(` jmp loop_continue_${currentLoopId}                  ; continue to next item`);
+  }
+
   _generateConditional(cond: Conditional)
   {
     const id = this.label_counter++;
     this._generateExpression(cond.expression);
     this.emit(` cmpl $0, %eax                      ; compare eax to 0
  je _cond_${id}                         ; jump if equal to _cond_${id}`);
+
     this._generateStatement(cond.if_statement);
+
     this.emit(` jmp _post_conditional_${id}            ; jump unconditionally to _post_conditional_${id}
 _cond_${id}:                             ; label for _cond_${id}`);
+
     if (cond.else_statement != null)
     {
       this._generateStatement(cond.else_statement);
@@ -197,27 +400,22 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
   _generateExpression(input: CExpression)
   {
-
     if (input instanceof UnOp)
     {
       this._generateUnOp(input as UnOp);
-    }
-    else if (input instanceof Assign)
+    } else if (input instanceof Assign)
     {
       this._generateAssign(input as Assign);
-    }
-    else if (input instanceof VariableRef)
+    } else if (input instanceof VariableRef)
     {
       this._generateVariableRef(input as VariableRef);
-    }
-    else if (input instanceof BinOp)
+    } else if (input instanceof BinOp)
     {
       this._generateBinOp(input as BinOp);
     } else if (input instanceof ConditionalExpression)
     {
       this._generateConditionalExpression(input as ConditionalExpression);
-    }
-    else
+    } else
     {
       this._generateConstant(input as Constant);
     }
@@ -238,7 +436,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
   _generateAssign(ass: Assign)
   {
-
     if (!this.variable_map.lookup(ass.str))
     {
       throw new Error(`Semantic Error: Undeclared identifier '${ass.str}'`);
@@ -271,9 +468,8 @@ _cond_${id}:                             ; label for _cond_${id}`);
  movzbl %al, %eax                   ; zero-extend al to eax`);
     } else if (unop.operator == "-")
     {
-      this._generateExpression(unop.expression)
+      this._generateExpression(unop.expression);
       this.emit(` neg %eax                           ; negate eax (two's complement)`);
-
     } else if (unop.operator == "++")
     {
       this._generateExpression(new BinOp("+=", unop.expression, new Constant(1)));
@@ -302,7 +498,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
  addl %ecx, %eax                    ; add ecx to eax`);
-
     } else if (binop.binary_operator == "-")
     {
       this._generateExpression(binop.expression_b);
@@ -310,7 +505,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this._generateExpression(binop.expression_a);
       this.emit(` popq %rcx                          ; pop stack into rcx
  subl %ecx, %eax                    ; subtract ecx from eax`);
-
     } else if (binop.binary_operator == "*")
     {
       this._generateExpression(binop.expression_a);
@@ -318,7 +512,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
       this._generateExpression(binop.expression_b);
       this.emit(` popq %rcx                          ; pop stack into rcx
  imul %ecx, %eax                    ; multiply eax by ecx`);
-
     } else if (binop.binary_operator == "/")
     {
       this._generateExpression(binop.expression_a);
@@ -328,7 +521,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
  popq %rax                          ; pop stack into rax
  cltd                               ; sign-extend eax into edx:eax
  idivl %ebx                         ; divide edx:eax by ebx`);
-
     } else if (binop.binary_operator == "==")
     {
       this._generateExpression(binop.expression_a);
@@ -338,7 +530,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
  cmpl %eax, %ecx                    ; compare eax and ecx
  movl $0, %eax                      ; move 0 into eax
  sete %al                           ; set al to 1 if equal`);
-
     } else if (binop.binary_operator == "!=")
     {
       this._generateExpression(binop.expression_a);
@@ -348,7 +539,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
  cmpl %eax, %ecx                    ; compare eax and ecx
  movl $0, %eax                      ; move 0 into eax
  setne %al                          ; set al to 1 if not equal`);
-
     } else if (binop.binary_operator == "<=")
     {
       this._generateExpression(binop.expression_a);
@@ -358,7 +548,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
  cmpl %eax, %ecx                    ; compare eax and ecx
  movl $0, %eax                      ; move 0 into eax
  setle %al                          ; set al to 1 if less or equal`);
-
     } else if (binop.binary_operator == ">=")
     {
       this._generateExpression(binop.expression_a);
@@ -368,7 +557,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
  cmpl %eax, %ecx                    ; compare eax and ecx
  movl $0, %eax                      ; move 0 into eax
  setge %al                          ; set al to 1 if greater or equal`);
-
     } else if (binop.binary_operator == "&&")
     {
       const id = this.label_counter++;
@@ -382,7 +570,6 @@ _clause2_${id}:                          ; label for _clause2_${id}`);
  movl $0, %eax                      ; move 0 into eax
  setne %al                          ; set al to 1 if not equal
 _end_${id}:                              ; label for _end_${id}`);
-
     } else if (binop.binary_operator == "||")
     {
       const id = this.label_counter++;
@@ -397,8 +584,6 @@ _clause2_${id}:                          ; label for _clause2_${id}`);
  movl $0, %eax                      ; move 0 into eax
  setne %al                          ; set al to 1 if not equal
 _end_${id}:                              ; label for _end_${id}`);
-
-
     } else if (binop.binary_operator == ">")
     {
       this._generateExpression(binop.expression_a);
@@ -408,13 +593,11 @@ _end_${id}:                              ; label for _end_${id}`);
  cmpl %eax, %ecx                    ; compare eax and ecx
  movl $0, %eax                      ; move 0 into eax
  setg %al                           ; set al to 1 if greater`);
-
     } else if (binop.binary_operator == ",")
     {
       this._generateExpression(binop.expression_a);
       this._generateExpression(binop.expression_b);
-    }
-    else if (binop.binary_operator == "%")
+    } else if (binop.binary_operator == "%")
     {
       this._generateExpression(binop.expression_a);
       this.emit(` pushq %rax                         ; push rax onto the stack`);
@@ -446,7 +629,6 @@ _end_${id}:                              ; label for _end_${id}`);
       this.emit(` movl %eax, %ecx                    ; move eax into ecx
  popq %rax                          ; pop stack into rax
  sall %cl, %eax                     ; shift eax left by cl bits`);
-
     } else if (binop.binary_operator == ">>")
     {
       this._generateExpression(binop.expression_a);
@@ -471,7 +653,6 @@ _end_${id}:                              ; label for _end_${id}`);
  cmpl %eax, %ecx                    ; compare eax and ecx
  movl $0, %eax                      ; move 0 into eax
  setl %al                           ; set al to 1 if less`);
-
     } else if (compoundAssignments.includes(binop.binary_operator))
     {
       const varRef = binop.expression_a as VariableRef;
@@ -484,9 +665,5 @@ _end_${id}:                              ; label for _end_${id}`);
     {
       throw new Error(`Semantic Error: Unsupported binary operator '${binop.binary_operator}'`);
     }
-
-
-
   }
-
 }
