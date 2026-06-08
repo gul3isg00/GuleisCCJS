@@ -6,9 +6,9 @@ export class FunctionDeclaration extends ASTNode
 {
   name: string;
   params: string[];
-  blocks: CBlock[];
+  blocks?: CBlock[];
 
-  constructor(name: string, blocks: CBlock[], params: string[])
+  constructor(name: string, params: string[], blocks?: CBlock[],)
   {
     super();
     this.name = name;
@@ -18,7 +18,7 @@ export class FunctionDeclaration extends ASTNode
 
   toString(): string
   {
-    return `[Function Declaration | name: ${this.name}, blocks: ${this.blocks.map(s => s.toString())}, params: ${this.params}]`;
+    return `[Function Declaration | name: ${this.name}, blocks: ${this.blocks ? this.blocks.map(b => b.toString()) : []}, params: ${this.params}]`;
   }
 
   toTree(): TreeVisualizerNode
@@ -26,7 +26,7 @@ export class FunctionDeclaration extends ASTNode
     return {
       name: "FunctionDeclaration",
       attributes: { "name": this.name, "params": this.params },
-      children: this.blocks.map(b => b.toTree())
-    };
+      children: this.blocks ? this.blocks.map(b => b.toTree()) : []
+    }
   }
 }

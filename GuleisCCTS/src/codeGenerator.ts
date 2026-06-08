@@ -35,11 +35,9 @@ class VariableMap
   private scopes: { [key: string]: number }[] = [{}];
   private currentStackIndex: number = ESP - NUM_OF_BYTES;
 
-
   enterFunction()
   {
     this.scopes = [this.scopes[0], {}];
-
     this.currentStackIndex = ESP - NUM_OF_BYTES;
   }
 
@@ -55,27 +53,14 @@ class VariableMap
 
   exitScope()
   {
-    if (this.scopes.length > 2)
-    {
-      this.scopes.pop();
-    } else
-    {
-      throw new Error("Compiler Error: Unbalanced exitScope calls.");
-    }
+    this.scopes.pop();
   }
 
   addVariable(name: string): number
   {
     const currentScope = this.scopes[this.scopes.length - 1];
-
-    if (name in currentScope)
-    {
-      throw new Error(`Semantic Error: Variable '${name}' defined more than once in this scope.`);
-    }
-
     currentScope[name] = this.currentStackIndex;
     this.currentStackIndex -= NUM_OF_BYTES;
-
     return currentScope[name];
   }
 
@@ -88,17 +73,15 @@ class VariableMap
         return this.scopes[i][name];
       }
     }
-    throw new Error(`Semantic Error: Variable '${name}' not defined.`);
+    return 0;
   }
 }
 
+// Lets try and build this.
 export abstract class CodeGenerator
 {
   label_counter: number = 0;
-
-  // Should be moved to symantic analyser
   variable_map: VariableMap;
-    
   loop_stack: number[] = [];
   current_function: string = "";
 
@@ -120,8 +103,11 @@ export abstract class CodeGenerator
       this._generateFunction(f)
     });
   }
+
   _generateFunction(input: CFunction)
   {
+    if (input.blocks === undefined) return;
+
     this.emit(`.globl ${input.name}                 ; make ${input.name} visible to linker
 ${input.name}:                              ; label for ${input.name}
  pushq %rbp                         ; save base pointer
@@ -133,7 +119,7 @@ ${input.name}:                              ; label for ${input.name}
     {
       if (input.params.length > 6)
       {
-        throw new Error("Semantic Error: More than 6 parameters not yet supported.");
+        throw new Error("Compiler Error: More than 6 parameters not yet supported.");
       }
 
       for (let i = 0; i < input.params.length; i++)
@@ -185,12 +171,10 @@ ${input.name}:                              ; label for ${input.name}
 
   _generateStatement(input: CStatement)
   {
-    // return
     if (input instanceof ReturnStatement)
     {
       this._generateReturnStatement(input as ReturnStatement);
     }
-    // (Potentially) Empty Expressions
     else if (input instanceof Exp)
     {
       const exp = input as Exp;
@@ -199,47 +183,38 @@ ${input.name}:                              ; label for ${input.name}
         this._generateExpression(exp.expression);
       }
     }
-    // Conditional statement
     else if (input instanceof Conditional)
     {
       this._generateConditional(input as Conditional);
     }
-    // Code block / compound statement
     else if (input instanceof Compound)
     {
       this._generateCompound(input as Compound);
     }
-    // For Loop
     else if (input instanceof For)
     {
       this._generateFor(input as For);
     }
-    // For Declaration Loop
     else if (input instanceof ForDeclaration)
     {
       this._generateForDecl(input as ForDeclaration);
     }
-    // While
     else if (input instanceof While)
     {
       this._generateWhile(input as While);
     }
-    // Do While
     else if (input instanceof Do)
     {
       this._generateDo(input as Do);
     }
-    // Break
     else if (input instanceof Break)
     {
       this._generateBreak();
     }
-    // Continue
     else if (input instanceof Continue)
     {
       this._generateContinue();
     }
-    // Expression
     else
     {
       this._generateExpression(input as CExpression);
@@ -251,22 +226,17 @@ ${input.name}:                              ; label for ${input.name}
     const loopId = this.label_counter++;
     this.loop_stack.push(loopId);
 
-    // Start the loop
     this.emit(`loop_start_${loopId}:                   ; label for while loop`);
     this.emit(`loop_continue_${loopId}:                ; continue`);
 
-    // Do the comparison
     this._generateExpression(whi.expression);
 
     this.emit(` testb %al, %al                  ; test the condition
  je loop_exit_${loopId}                  ; exit the loop if condition is met`);
 
-    // Function body
     this._generateStatement(whi.statement);
 
-    // Jump to the start
     this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
-    // Exit
     this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
 
     this.loop_stack.pop();
@@ -277,23 +247,18 @@ ${input.name}:                              ; label for ${input.name}
     const loopId = this.label_counter++;
     this.loop_stack.push(loopId);
 
-    // Start the loop
     this.emit(`loop_start_${loopId}:                   ; label for do while loop`);
 
-    // Function body
     this._generateStatement(doo.statement);
 
     this.emit(`loop_continue_${loopId}:                ; continue goes to condition check`);
 
-    // Do the comparison
     this._generateExpression(doo.expression);
 
     this.emit(` testb %al, %al                  ; test the condition
  je loop_exit_${loopId}                  ; exit the loop if condition is met`);
 
-    // Jump to the start
     this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
-    // Exit
     this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
 
     this.loop_stack.pop();
@@ -318,33 +283,24 @@ ${input.name}:                              ; label for ${input.name}
   {
     const loopId = this.label_counter++;
 
-    // Generate the initial expression
     this._generateStatement(frStat.initial_exp);
 
     this.loop_stack.push(loopId);
 
-    // Start the loop
     this.emit(`loop_start_${loopId}:                   ; label for for loop`);
 
-    // Generate the condition
     this._generateExpression(frStat.condition);
 
-    // If the expression is false, exit
     this.emit(` testb %al, %al                  ; test the condition
  je loop_exit_${loopId}                  ; exit the loop if condition is met`);
 
-    // Generate the statement
     this._generateStatement(frStat.body);
 
-    // In case a continue is used.
     this.emit(`loop_continue_${loopId}:                  ; label for continue`);
 
-    // Generate the post expression
     this._generateStatement(frStat.post_exp);
 
-    // Jump to the start
     this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
-    // Exit
     this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
 
     this.loop_stack.pop();
@@ -356,33 +312,24 @@ ${input.name}:                              ; label for ${input.name}
 
     this.variable_map.enterScope();
 
-    // Generate the initial expression
     this._generateDeclaration(frDecl.initial_declaration);
 
     this.loop_stack.push(loopId);
 
-    // Start the loop
     this.emit(`loop_start_${loopId}:                   ; label for for loop`);
 
-    // Generate the condition
     this._generateExpression(frDecl.condition);
 
-    // If the expression is false, exit
     this.emit(` testb %al, %al                  ; test the condition
  je loop_exit_${loopId}                  ; exit the loop if condition is met`);
 
-    // Generate the statement
     this._generateStatement(frDecl.body);
 
-    // In case a continue is used.
     this.emit(`loop_continue_${loopId}:                  ; label for continue`);
 
-    // Generate the post expression
     this._generateStatement(frDecl.post_exp);
 
-    // Jump to the start
     this.emit(` jmp loop_start_${loopId}                  ; jump to loop start`);
-    // Exit
     this.emit(`loop_exit_${loopId}:                  ; exit the loop`);
 
     this.loop_stack.pop();
@@ -391,20 +338,12 @@ ${input.name}:                              ; label for ${input.name}
 
   _generateBreak()
   {
-    if (this.loop_stack.length === 0)
-    {
-      throw new Error(`Semantic Error: Break called outside of loop.`);
-    }
     const currentLoopId = this.loop_stack[this.loop_stack.length - 1];
     this.emit(` jmp loop_exit_${currentLoopId}                  ; break the loop`);
   }
 
   _generateContinue()
   {
-    if (this.loop_stack.length === 0)
-    {
-      throw new Error(`Semantic Error: Continue called outside of loop.`);
-    }
     const currentLoopId = this.loop_stack[this.loop_stack.length - 1];
     this.emit(` jmp loop_continue_${currentLoopId}                  ; continue to next item`);
   }
@@ -490,11 +429,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
   _generateAssign(ass: Assign)
   {
-    if (!this.variable_map.lookup(ass.str))
-    {
-      throw new Error(`Semantic Error: Undeclared identifier '${ass.str}'`);
-    }
-
     this._generateExpression(ass.expression);
     const offset = this.variable_map.lookup(ass.str);
     this.emit(` movl %rax, ${offset}(%rbp)                ; move eax into local variable at offset ${offset}`);
@@ -502,11 +436,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
 
   _generateVariableRef(varRef: VariableRef)
   {
-    if (!this.variable_map.lookup(varRef.str))
-    {
-      throw new Error(`Semantic Error: Undeclared identifier '${varRef.str}'`);
-    }
-
     const offset = this.variable_map.lookup(varRef.str);
     this.emit(` movl ${offset}(%rbp), %rax                ; move local variable at offset ${offset} into eax`);
   }
@@ -552,7 +481,6 @@ _cond_${id}:                             ; label for _cond_${id}`);
       cur_reg--;
     }
 
-    // zero out %al for functions like printf
     this.emit(` xorq %rax, %rax                        ; clear al to 0 for variadic functions`);
     this.emit(` call ${fc.name}`);
   }
@@ -738,7 +666,7 @@ _end_${id}:                              ; label for _end_${id}`);
       );
     } else
     {
-      throw new Error(`Semantic Error: Unsupported binary operator '${binop.binary_operator}'`);
+      throw new Error(`Compiler Error: Unsupported binary operator '${binop.binary_operator}'`);
     }
   }
 }

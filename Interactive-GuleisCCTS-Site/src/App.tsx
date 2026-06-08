@@ -35,17 +35,9 @@ const getNodeColor = (type: string) =>
 const renderCustomNode = ({ nodeDatum, toggleNode }: any) =>
 {
   const bgColor = getNodeColor(nodeDatum.name);
-
   return (
     <g onClick={toggleNode} style={{ cursor: 'pointer' }}>
-      <rect
-        width="160" height="60"
-        x="-80" y="-30"
-        fill={bgColor}
-        rx="8"
-        stroke="var(--bg)"
-        strokeWidth="3"
-      />
+      <rect width="160" height="60" x="-80" y="-30" fill={bgColor} rx="8" stroke="var(--bg)" strokeWidth="3" />
       <text fill="white" strokeWidth="0" x="0" y="-5" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'var(--mono)' }}>
         {nodeDatum.name}
       </text>
@@ -64,6 +56,7 @@ function App()
   const [assembly, setAssembly] = useState('');
   const [tokens, setTokens] = useState<string[]>([]);
   const [ast, setAst] = useState<any>(null);
+  const [symbols, setSymbols] = useState<any>(null);
   const [error, setError] = useState('');
 
   const treeContainerRef = useRef<HTMLDivElement>(null);
@@ -76,19 +69,20 @@ function App()
     try
     {
       const result: any = await compiler.compile(sourceCode);
-      console.log(result);
 
       if (result && result.success)
       {
         setAssembly(result.compiled || '');
         setTokens(result.tokens || []);
         setAst(result.parsed || null);
+        setSymbols(result.symbols || null);
       } else
       {
         setError(result?.error || 'Compilation failed');
         setAssembly('');
         setTokens([]);
         setAst(null);
+        setSymbols(null);
       }
     } catch (err: any)
     {
@@ -96,95 +90,88 @@ function App()
     }
   };
 
-  useEffect(() =>
-  {
-    handleCompile();
-  }, []);
+  useEffect(() => { handleCompile(); }, []);
 
   return (
     <div className="workspace-container">
       <header className="header">
-        <h1>GuleisCCTS Interactive Compiler </h1>
-        <button onClick={handleCompile} className="compile-btn">
-          Compile Code
-        </button>
+        <h1>GuleisCCTS Interactive Compiler</h1>
+        <button onClick={handleCompile} className="compile-btn">Compile Code</button>
       </header>
 
+      {error && <div className="error-box" style={{ marginBottom: '16px' }}><strong>Error:</strong> {error}</div>}
+
       <div className="panels">
-        <div className="panel left-panel">
-          <div className="panel-header">C Source Code</div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <Editor
-              height="100%"
-              language="c"
-              theme="vs-dark"
-              value={sourceCode}
-              onChange={(value) => setSourceCode(value || '')}
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                fontFamily: 'ui-monospace, Consolas, monospace',
-                padding: { top: 16 },
-                scrollBeyondLastLine: false,
-              }}
-            />
+        <div className="column col-left">
+          <div className="panel">
+            <div className="panel-header">C Source Code</div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <Editor
+                height="100%" language="c" theme="vs-dark" value={sourceCode}
+                onChange={(value) => setSourceCode(value || '')}
+                options={{ minimap: { enabled: false }, fontSize: 14, fontFamily: 'ui-monospace, Consolas, monospace', padding: { top: 16 } }}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="panel middle-panel">
-          <div className="panel-header">Compilation Process</div>
-          <div className="process-content">
-            {error && <div className="error-box"><strong>Error:</strong> {error}</div>}
-
-            <div className="process-section">
-              <h3>Lexing</h3>
+        <div className="column col-middle">
+          <div className="panel panel-lexing">
+            <div className="panel-header">Lexing (Tokens)</div>
+            <div className="process-content">
               <div className="token-container">
                 {tokens.map((token, i) => (
                   <span key={i} className="token-badge">{token}</span>
                 ))}
               </div>
             </div>
+          </div>
 
-            <div className="process-section" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', marginBottom: '8px' }}>
-                <h3 style={{ borderBottom: 'none', margin: 0, paddingBottom: 0 }}>Parsing</h3>
-              </div>
-
-              <div ref={treeContainerRef} style={{ width: '100%', height: '500px', background: 'var(--code-bg)', borderRadius: '6px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                {ast ? (
-                  <Tree
-                    data={ast}
-                    orientation="vertical"
-                    pathFunc="step"
-                    translate={{ x: 250, y: 50 }}
-                    nodeSize={{ x: 180, y: 100 }}
-                    renderCustomNodeElement={renderCustomNode}
-                  />
-                ) : (
-                  <div style={{ padding: '12px' }}>No AST generated.</div>
-                )}
-              </div>
+          <div className="panel panel-ast">
+            <div className="panel-header">Parsing (AST)</div>
+            <div ref={treeContainerRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
+              {ast ? (
+                <Tree
+                  data={ast} orientation="vertical" pathFunc="step"
+                  translate={{ x: 250, y: 50 }} nodeSize={{ x: 180, y: 100 }}
+                  renderCustomNodeElement={renderCustomNode}
+                />
+              ) : (
+                <div style={{ padding: '16px', color: 'var(--text-h)' }}>No AST generated.</div>
+              )}
             </div>
           </div>
         </div>
 
-        <div className="panel right-panel">
-          <div className="panel-header">Generated Assembly (x86)</div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <Editor
-              height="100%"
-              language="assembly" // Adds syntax highlighting for assembly!
-              theme="vs-dark"
-              value={assembly}
-              options={{
-                readOnly: true, // Prevents user from typing in the output
-                minimap: { enabled: false },
-                fontSize: 14,
-                fontFamily: 'ui-monospace, Consolas, monospace',
-                padding: { top: 16 },
-                scrollBeyondLastLine: false,
-              }}
-            />
+        <div className="column col-right">
+          <div className="panel panel-semantic">
+            <div className="panel-header">Semantic Analysis</div>
+            <div className="process-content">
+              {symbols ? (
+                <div>
+                  <h3 style={{ fontSize: '14px', color: 'var(--accent)', marginTop: 0 }}>Symbol Table</h3>
+                  {symbols.functions.map((fn: any, i: number) => (
+                    <div key={i} style={{ fontFamily: 'var(--mono)', fontSize: '12px', background: 'var(--code-bg)', padding: '8px', borderRadius: '4px', marginBottom: '8px', border: '1px solid var(--border)' }}>
+                      <strong style={{ color: '#8b5cf6' }}>{fn.name}</strong>(
+                      {fn.params.join(', ')})<br />
+                      <span style={{ color: 'var(--text-h)', fontSize: '11px' }}>Definition: {fn.hasBody ? 'Yes' : 'No'}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: 'var(--text-h)' }}>Waiting for analysis...</div>
+              )}
+            </div>
+          </div>
+
+          <div className="panel panel-output">
+            <div className="panel-header">Generated Assembly (x86)</div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <Editor
+                height="100%" language="assembly" theme="vs-dark" value={assembly}
+                options={{ readOnly: true, minimap: { enabled: false }, fontSize: 14, fontFamily: 'ui-monospace, Consolas, monospace', padding: { top: 16 } }}
+              />
+            </div>
           </div>
         </div>
       </div>

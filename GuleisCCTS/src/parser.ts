@@ -28,33 +28,18 @@ import { FunctionCall } from "./AST/constructs/types/functionCall";
 
 const DEBUG_MODE = false;
 
-export class FunctionData
-{
-  params: string[];
-  hasBody: boolean;
-
-  constructor(params: string[], hasBody: boolean)
-  {
-    this.params = params;
-    this.hasBody = hasBody;
-  }
-}
-
+// Lets try and read this.
 export class Parser
 {
   tokens: string[];
   current: number;
   line_number: number;
 
-  // Should be moved to semantic analyser
-  defined_funcs: { [key: string]: FunctionData };
-
   constructor()
   {
     this.tokens = [];
     this.current = 0;
     this.line_number = 0;
-    this.defined_funcs = {};
   }
 
   private skipGarbage(): void
@@ -93,17 +78,6 @@ export class Parser
     this.skipGarbage();
     // if (!this.tokens[this.current]) this.throwError("Malformed.")
     return this.tokens[this.current];
-  }
-
-  getNumParams(id: string): number
-  {
-    if (this.defined_funcs[id] != null)
-    {
-      return this.defined_funcs[id].params.length;
-    }
-
-    this.throwError(`Function ${id} doesn't exist.`);
-    return -1;
   }
 
   consume(): string
@@ -149,7 +123,6 @@ export class Parser
   _parseProgram(): CProgram
   {
     this.line_number = 0;
-    this.defined_funcs = {};
 
     let functions: CFunction[] = [];
 
@@ -188,29 +161,15 @@ export class Parser
       if (next == ",") { this.consume(); next = this.peek(); }
     }
 
-    if (this.defined_funcs[identifier] && this.defined_funcs[identifier].params.length != params.length)
-    {
-      this.throwError(`Parameter mismatch for function ${identifier}`);
-    } else if (!this.defined_funcs[identifier])
-    {
-      this.defined_funcs[identifier] = new FunctionData(params, false);
-    }
-
     this.expect(")");
 
     if (this.peek() == ";")
     {
       this.consume();
-      return new FunctionDeclaration(identifier, [], params);
+      return new FunctionDeclaration(identifier, params, undefined);
     }
 
-    if (this.defined_funcs[identifier] && this.defined_funcs[identifier].hasBody)
-    {
-      this.throwError(`Function ${identifier} defined twice.`)
-    }
-
-    this.defined_funcs[identifier].hasBody = true;
-    return new FunctionDeclaration(identifier, (this._parseStatement() as Compound).blocks, params);;
+    return new FunctionDeclaration(identifier, params, (this._parseStatement() as Compound).blocks);
   }
 
   //<block-item> ::= <statement> | <declaration>
@@ -561,8 +520,6 @@ export class Parser
   {
     this.expect("(");
 
-    const numParams: number = this.getNumParams(id);
-
     let params: CExpression[] = [];
 
     let next = this.peek();
@@ -577,11 +534,6 @@ export class Parser
         this.consume();
         next = this.peek();
       }
-    }
-
-    if (params.length != numParams)
-    {
-      this.throwError(`Bad parameters for function ${id}`);
     }
 
     this.expect(")");
