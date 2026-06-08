@@ -128,7 +128,7 @@ export class Parser
     return new Program(funcDec);
   }
 
-  // <function> ::= "int" <id> "(" ")" "{" { <block-item> } "}"
+  // <function> ::= "int" <id> "(" [ "int" <id> { "," "int" <id> } ] ")" ( "{" { <block-item> } "}" | ";" )
   _parseFunction(): CFunction
   {
     this.expect("int");
@@ -136,9 +136,32 @@ export class Parser
     const identifier = this.consume();
 
     this.expect("(");
+
+
+    let next = this.peek();
+
+    let params: string[] = [];
+
+    while (next != ")")
+    {
+      this.expect("int");
+
+      params.push(this.consume());
+
+      next = this.peek();
+
+      if (next == ",") { this.consume(); next = this.peek(); }
+    }
+
     this.expect(")");
 
-    return new FunctionDeclaration(identifier, (this._parseStatement() as Compound).blocks);
+    if (this.peek() == ";")
+    {
+      this.consume();
+      return new FunctionDeclaration(identifier, [], params);
+    }
+
+    return new FunctionDeclaration(identifier, (this._parseStatement() as Compound).blocks, params);
   }
 
   //<block-item> ::= <statement> | <declaration>
