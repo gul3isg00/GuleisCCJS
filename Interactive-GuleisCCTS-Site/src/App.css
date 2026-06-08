@@ -64,26 +64,6 @@
   letter-spacing: 0.5px;
 }
 
-.code-area {
-  flex: 1;
-  width: 100%;
-  padding: 16px;
-  border: none;
-  resize: none;
-  white-space: pre;
-  font-family: var(--mono);
-  font-size: 14px;
-  line-height: 1.5;
-  background: transparent;
-  color: var(--text-h);
-  outline: none;
-  box-sizing: border-box;
-}
-
-.output-area {
-  background: var(--code-bg);
-}
-
 .middle-panel {
   flex: 1.2; /* Make the middle panel slightly wider */
   background: var(--code-bg);
@@ -95,6 +75,19 @@
   padding: 16px;
 }
 
+
+.left-panel {
+  flex: 1; 
+}
+
+.middle-panel {
+  flex: 2.5; 
+  background: var(--code-bg);
+}
+
+.right-panel {
+  flex: 1.5; 
+}
 .process-section h3 {
   font-size: 14px;
   margin-top: 0;

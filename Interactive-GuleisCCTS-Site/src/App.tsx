@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GuleisCCTSWeb } from 'guleisccjs/src/guleisCCTSWeb';
+import Editor from '@monaco-editor/react';
 import Tree from 'react-d3-tree';
 import './App.css';
 
@@ -110,14 +111,24 @@ function App()
       </header>
 
       <div className="panels">
-        <div className="panel">
+        <div className="panel left-panel">
           <div className="panel-header">C Source Code</div>
-          <textarea
-            value={sourceCode}
-            onChange={(e) => setSourceCode(e.target.value)}
-            className="code-area"
-            spellCheck={false}
-          />
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <Editor
+              height="100%"
+              language="c"
+              theme="vs-dark"
+              value={sourceCode}
+              onChange={(value) => setSourceCode(value || '')}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: 'ui-monospace, Consolas, monospace',
+                padding: { top: 16 },
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </div>
         </div>
 
         <div className="panel middle-panel">
@@ -157,14 +168,24 @@ function App()
           </div>
         </div>
 
-        <div className="panel">
+        <div className="panel right-panel">
           <div className="panel-header">Generated Assembly (x86)</div>
-          <textarea
-            value={assembly}
-            readOnly
-            className="code-area output-area"
-            spellCheck={false}
-          />
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <Editor
+              height="100%"
+              language="assembly" // Adds syntax highlighting for assembly!
+              theme="vs-dark"
+              value={assembly}
+              options={{
+                readOnly: true, // Prevents user from typing in the output
+                minimap: { enabled: false },
+                fontSize: 14,
+                fontFamily: 'ui-monospace, Consolas, monospace',
+                padding: { top: 16 },
+                scrollBeyondLastLine: false,
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

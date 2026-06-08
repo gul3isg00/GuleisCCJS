@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "guleisccjs": "*",
     "html-to-image": "^1.11.13",
     "react": "^19.2.6",
