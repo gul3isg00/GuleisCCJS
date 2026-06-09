@@ -31,25 +31,51 @@ const getNodeColor = (type: string) =>
     default: return '#6b7280';
   }
 };
-
 const renderCustomNode = ({ nodeDatum, toggleNode }: any) =>
 {
   const bgColor = getNodeColor(nodeDatum.name);
+
+  const charWidthTitle = 8.5;
+  const charWidthAttr = 6.6; 
+
+  let maxTextWidth = (nodeDatum.name?.length || 0) * charWidthTitle;
+  let attrCount = 0;
+
+  if (nodeDatum.attributes) {
+    Object.entries(nodeDatum.attributes).forEach(([key, val]) => {
+      const textLen = `${key}: ${String(val)}`.length * charWidthAttr;
+      if (textLen > maxTextWidth) maxTextWidth = textLen;
+      attrCount++;
+    });
+  }
+
+  const paddingX = 40; 
+  const width = Math.max(100, maxTextWidth + paddingX); 
+  const height = 30 + (attrCount * 14) + 10;         
+
   return (
     <g onClick={toggleNode} style={{ cursor: 'pointer' }}>
-      <rect width="160" height="60" x="-80" y="-30" fill={bgColor} rx="8" stroke="var(--bg)" strokeWidth="3" />
-      <text fill="white" strokeWidth="0" x="0" y="-5" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'var(--mono)' }}>
+      <rect 
+        width={width} 
+        height={height} 
+        x={-(width / 2)} 
+        y="-20"        
+        fill={bgColor} 
+        rx="6" 
+        stroke="var(--bg)" 
+        strokeWidth="3" 
+      />
+      <text fill="white" strokeWidth="0" x="0" y="0" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'var(--mono)' }}>
         {nodeDatum.name}
       </text>
       {nodeDatum.attributes && Object.entries(nodeDatum.attributes).map(([key, val], i) => (
-        <text key={key} fill="rgba(255, 255, 255, 0.9)" strokeWidth="0" x="0" y={15 + (i * 14)} textAnchor="middle" style={{ fontSize: '11px', fontFamily: 'var(--mono)' }}>
+        <text key={key} fill="rgba(255, 255, 255, 0.9)" strokeWidth="0" x="0" y={18 + (i * 14)} textAnchor="middle" style={{ fontSize: '11px', fontFamily: 'var(--mono)' }}>
           {key}: {String(val)}
         </text>
       ))}
     </g>
   );
 };
-
 function App()
 {
   const [sourceCode, setSourceCode] = useState(defaultCode);
@@ -126,14 +152,17 @@ function App()
               </div>
             </div>
           </div>
-
           <div className="panel panel-ast">
             <div className="panel-header">Parsing (AST)</div>
             <div ref={treeContainerRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
               {ast ? (
                 <Tree
-                  data={ast} orientation="vertical" pathFunc="step"
-                  translate={{ x: 250, y: 50 }} nodeSize={{ x: 180, y: 100 }}
+                  data={ast} 
+                  orientation="vertical" 
+                  pathFunc="step"
+                  translate={{ x: 300, y: 50 }} 
+                  nodeSize={{ x: 150, y: 90 }}
+                  separation={{ siblings: 1.1, nonSiblings: 1.2 }}
                   renderCustomNodeElement={renderCustomNode}
                 />
               ) : (
@@ -141,7 +170,7 @@ function App()
               )}
             </div>
           </div>
-        </div>
+          </div>
 
         <div className="column col-right">
           <div className="panel panel-semantic">
