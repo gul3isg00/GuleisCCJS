@@ -1,7 +1,7 @@
 import { CodeGeneratorWeb } from "./codeGeneratorWeb";
 import { GuleisCCTS } from "./compiler";
 
-// For web based execution of the compiler.
+// For web based execution of the compiler (simply returns the compiled file).
 export class GuleisCCTSWeb extends GuleisCCTS
 {
     constructor()

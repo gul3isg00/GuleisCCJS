@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
 // Necessary for the test script to run properly.
 const COMPILE_TO_MACHINE_CODE = true;
 
-// For local execution of the compiler.
+// For local execution of the compiler (compiles files locally).
 export class GuleisCCTSLocal extends GuleisCCTS
 {
     source: string;

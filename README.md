@@ -1,17 +1,12 @@
 # GuleisCCTS
 
-This is a personal project I have undertaken to help myself learn the inner workings of a compiler.
+GuleisCCTS is a TypeScript (TS) C compiler, which compiles C to x86-64 assembly, written in the AT&T syntax. 
 
+When run locally, after assembly compilation completes, gcc is automatically used to finish the job, translating the assembly to machine code.
 
-The idea is to write a TypeScript (TS) C compiler, which compiles C to x86-64 assembly. written in the AT&T syntax. 
+To help with the debugging of the compiler, and for educational purposes, a React/Vite webapp was developed which hooks into the compiler to demonstrate the process of compilation visually.
 
-In this implementation after compiling to assembly, gcc is automatically used to finish the job, translating the assembly to machine code.
-
-
-For educational purposes, I have also created a React/Vite webapp which hooks into the compiler to demonstrate how they work.
-
-
-For anyone wishing to try something similar themselves, I am heavily following the guide written by **Nora Sandler**. (https://norasandler.com/2017/11/29/Write-a-Compiler.html)
+For anyone wishing to try something similar themselves, I am heavily following the guide (Now book!) written by **Nora Sandler**. (https://norasandler.com/2017/11/29/Write-a-Compiler.html)
 
 ## Pre-requisites
 
@@ -20,9 +15,31 @@ For anyone wishing to try something similar themselves, I am heavily following t
 
 ## Setup
 
-Clone the repository to a local directory, then run ``npm install``.
+Clone the repository to a local directory, once cloned, install both of the sub-directories with ``npm install``.
 
-## Running / Testing
+Once both subdirectories (``GuleisCCTS`` & ``Interactive-GuleisCCTS-Site``) have been installed, re-run the install command in the project root.
+
+## Project Structure
+
+```
+GuleisCCTS
+│   README.md    
+|
+└───GuleisCCTS (Back-end project with the compiler source code)
+│   │   
+│   └───c_src (A folder containing a variety of .c files for testing.)
+│   │
+│   └───src (The compiler source code)
+│       │   
+│       └───AST (Contains the source files for all AST Nodes)
+│   
+└───Interactive-GuleisCCTS-Site (Front-end project containing the React web-app for visualisation.)
+```
+
+## Running / Testing (Back-end)
+### Enter project
+``cd GuleisCCTS``
+
 ### C file compilation.
 ``npm start -- <file_path>``
 
@@ -34,73 +51,26 @@ Clone the repository to a local directory, then run ``npm install``.
 
 *(start/end_stage_number must be a number 1-10. If no "end_stage_number" is inputted, it'll just run a singular test)*
 
-## Project Structure
+## Running (Front-end)
+### Enter project
+``cd Interactive-GuleisCCTS-Site``
 
+### Run web-app
+``npm run dev``
+
+## Capabilities
+
+This is an active project, which is being updated weekly. Currently the compiler is able to correctly handle and compile programs which utilise:
+
+- **Integers** (e.g. ``1``)
+- **Unary Operators** (!, ~, -, ++, --)
+- **Binary Operators** (+, *, /, etc.)
+- **Local Variables** (e.g. ``int x = 1;``)
+- **Conditionals** (e.g. ``if (x) else``)
+- **Compound Statements** (e.g. ``if (x) { x = 3; } else { b = 3; }``)
+- **Loops** (e.g. ``for``, ``while``, ``do{} while()``)
+- **Functions** (e.g. ``int foo(int a){return a;}``)
+
+The end goal is that the compiler will be able to handle *everything* (I say optimisitically), such that any valid C programs can be compiled within it.
 
 ## Theory
-
-For this compiler there are 3 main parts. 
-
-1. A **Lexer**
-2. A **Parser**
-3. A **Generator**
-
-### Lexer
-
-Lexers simply break down the inputted c file into tokens.
-
-
-For example:
-
-```
-int main() {
-    return 2;
-}
-```
-
-would be broken down to:
-
-``["int", "main", "(", ")", "{", "return", "2", ";", "}"]``
-
-
-These tokens can then be parsed to the parser.
-
-### Parser
-
-The parser is arguably the most complex and important part of the process. This is the part which determines whether the code being compiled is valid.
-
-
-It does this by building an **Abstract syntax tree** from the tokens, creating a structural representation of the input whilst checking for the correct synax.
-
-
-In this implementation the important tokens can be separated out into 4 main types.
-
-#### Programs
-
-#### Functions
-
-#### Statements
-
-#### Expressions
-Currently expressions are defined as either **Unary Operations** (operations that act on a single value), **Binary Operations** (operations that act on 2 values), and **Constants** (unchanging integer values).
-
-##### Precidence
-
-In order to enforce the precidence of the operators we separate expressions into, **Expressions**, **Terms**, and **Factors**.
-
-An **Expression** can be:
-- An **Expression** + or - an **Expression**
-- A **Term**
-
-A **Term** can be:
-- A **Term** * or / a **Term**
-- A **Factor**
-
-A **Factor** can be:
-- An **Expression** within brackets.
-- An **Unary Operator** and a **Factor**
-- A **Constant**
-
-By breaking down and evaluating **Expressions** this way it means proper logic can be followed, and we can safely disambiguate the order and type of operations being used within the expression.
-
-### Generator
