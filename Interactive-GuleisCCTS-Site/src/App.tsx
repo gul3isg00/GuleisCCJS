@@ -4,13 +4,17 @@ import Editor from '@monaco-editor/react';
 import Tree from 'react-d3-tree';
 import './App.css';
 
-const defaultCode = `int main() {
-  int a = 5;
-  int b = 10;
-  if (a < b) 
-    return a;
-  else 
-    return b;
+const defaultCode = `int fib(int n) {
+  if (n == 0 || n == 1) {
+      return n;
+  } else {
+      return fib(n - 1) + fib(n - 2);
+  }
+}
+
+int main() {
+  int n = 5;
+  return fib(n);
 }`;
 
 const getNodeColor = (type: string) =>

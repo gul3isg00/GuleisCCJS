@@ -32,6 +32,7 @@ export class SemanticAnalyser {
 
   private functions: Map<string, FunctionSignature> = new Map();
   private loopDepth: number = 0;
+
   analyse(input: ASTNode): { ast: ASTNode; symbols: any } {
     if (input.constructor.name == "Program") {
       this.visitProgram(input as CProgram);
@@ -59,9 +60,14 @@ export class SemanticAnalyser {
     this.scopes.pop();
   }
 
+  private variableExistsInScope(name: string) {
+    const currentScope = this.scopes[this.scopes.length - 1];
+    return currentScope.has(name);
+  }
+
   private declareVariable(name: string, hasInitialiser: boolean) {
     const currentScope = this.scopes[this.scopes.length - 1];
-    const isGlobalScope = this.scopes.length === 1;
+    const isGlobalScope = this.scopes.length == 1;
 
     if (currentScope.has(name)) {
       // GLOBAL SCOPE
@@ -102,6 +108,11 @@ export class SemanticAnalyser {
         const func = item as FunctionDeclaration;
         const isDefinition = func.blocks != undefined;
 
+        if (this.variableExistsInScope(func.name))
+          throw new Error(
+            `Semantic Error: ${func.name} cannot be redefined as a function.`
+          );
+
         if (this.functions.has(func.name)) {
           const existing = this.functions.get(func.name)!;
 
@@ -131,6 +142,12 @@ export class SemanticAnalyser {
         }
       } else if (item instanceof Declare) {
         const dec = item as Declare;
+
+        if (this.functions.get(dec.str) != null)
+          throw new Error(
+            `Semantic Error: ${dec.str} cannot be redefined as a variable.`
+          );
+
         if (item.expression != null && !(item.expression instanceof Constant)) {
           throw new Error(
             `Semantic Error: Initialisier expression for ${dec.str} is not a constant.`
