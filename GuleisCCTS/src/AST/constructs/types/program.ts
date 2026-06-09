@@ -1,26 +1,27 @@
 import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
 import { CFunction } from "../cFunction";
+import { CTopLevelItem } from "../cTopLevelItem";
 
 export class Program extends ASTNode
 {
-  function_declaration: CFunction[];
+  items: CTopLevelItem[];
 
-  constructor(function_declaration: CFunction[])
+  constructor(items: CTopLevelItem[])
   {
     super();
-    this.function_declaration = function_declaration;
+    this.items = items;
   }
 
   toString(): string
   {
-    return `(Program | function_declaration: ${this.function_declaration.map(p => p.toString())})`;
+    return `(Program | items: ${this.items.map(p => p.toString())})`;
   }
 
   toTree(): TreeVisualizerNode
   {
     return {
       name: "Program",
-      children: this.function_declaration.map(p => p.toTree())
+      children: this.items.map(p => p.toTree())
     };
   }
 }

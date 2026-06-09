@@ -3,11 +3,13 @@ import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 import { SemanticAnalyser } from "./semanticAnalyser";
+import { Constant } from "./AST/constructs/types/constant";
+import { ASTNode } from "./AST/ASTNode";
 
 const DO_CODE_GENERATION = true;
+const DO_SEMANTIC_ANALYSIS = true;
 
-export class GuleisCCTS
-{
+export class GuleisCCTS {
   lexer: Lexer;
   parser: Parser;
   generator: CodeGenerator;
@@ -15,17 +17,14 @@ export class GuleisCCTS
 
   DEBUG_MODE: boolean = false;
 
-  constructor()
-  {
+  constructor() {
     this.lexer = new Lexer();
     this.parser = new Parser();
     this.semanticAnalyser = new SemanticAnalyser();
     this.generator = new CodeGeneratorLocal("");
   }
-  async _compile(rawCode: string)
-  {
-    try
-    {
+  async _compile(rawCode: string) {
+    try {
       if (this.DEBUG_MODE) console.log(rawCode);
 
       const tokens = this.lexer.lex(rawCode);
@@ -36,9 +35,15 @@ export class GuleisCCTS
       const parsed = this.parser.parse(tokens);
       if (this.DEBUG_MODE) parsed.print();
 
-      const analysed = this.semanticAnalyser.analyse(parsed);
+      let analysed: { ast: ASTNode; symbols: any } = {
+        ast: new Constant(1),
+        symbols: { functions: [] },
+      };
 
-      let compiled = "Assembly Code Generation disabled."
+      if (DO_SEMANTIC_ANALYSIS)
+        analysed = this.semanticAnalyser.analyse(parsed);
+
+      let compiled = "Assembly Code Generation disabled.";
 
       if (DO_CODE_GENERATION) compiled = this.generator.generate(analysed.ast);
 
@@ -47,14 +52,13 @@ export class GuleisCCTS
         tokens: tokens,
         parsed: parsed.toTree(),
         symbols: analysed.symbols,
-        compiled: compiled
-      }
-    } catch (err: any)
-    {
+        compiled: compiled,
+      };
+    } catch (err: any) {
       return {
         success: false,
-        error: err.message
-      }
+        error: err.message,
+      };
     }
   }
 }

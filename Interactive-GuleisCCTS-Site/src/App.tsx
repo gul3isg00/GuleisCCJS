@@ -162,7 +162,7 @@ function App()
                   pathFunc="step"
                   translate={{ x: 300, y: 50 }} 
                   nodeSize={{ x: 150, y: 90 }}
-                  separation={{ siblings: 1.1, nonSiblings: 1.2 }}
+                  separation={{ siblings: 1.5, nonSiblings: 1.2 }}
                   renderCustomNodeElement={renderCustomNode}
                 />
               ) : (
