@@ -3,13 +3,14 @@ import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 import { SemanticAnalyser } from "./semanticAnalyser";
-import { Constant } from "./AST/constructs/types/constant";
+import { IntegerConstant } from "./AST/constructs/types/integerConstant";
 import { ASTNode } from "./AST/ASTNode";
 
 const DO_CODE_GENERATION = true;
 const DO_SEMANTIC_ANALYSIS = true;
 
-export class GuleisCCTS {
+export class GuleisCCTS
+{
   lexer: Lexer;
   parser: Parser;
   generator: CodeGenerator;
@@ -17,14 +18,17 @@ export class GuleisCCTS {
 
   DEBUG_MODE: boolean = false;
 
-  constructor() {
+  constructor()
+  {
     this.lexer = new Lexer();
     this.parser = new Parser();
     this.semanticAnalyser = new SemanticAnalyser();
     this.generator = new CodeGeneratorLocal("");
   }
-  async _compile(rawCode: string) {
-    try {
+  async _compile(rawCode: string)
+  {
+    try
+    {
       if (this.DEBUG_MODE) console.log(rawCode);
 
       const tokens = this.lexer.lex(rawCode);
@@ -36,7 +40,7 @@ export class GuleisCCTS {
       if (this.DEBUG_MODE) parsed.print();
 
       let analysed: { ast: ASTNode; symbols: any } = {
-        ast: new Constant(1),
+        ast: new IntegerConstant(1),
         symbols: { functions: [] },
       };
 
@@ -54,7 +58,8 @@ export class GuleisCCTS {
         symbols: analysed.symbols,
         compiled: compiled,
       };
-    } catch (err: any) {
+    } catch (err: any)
+    {
       return {
         success: false,
         error: err.message,

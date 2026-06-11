@@ -1,9 +1,9 @@
 import { Assign } from "./types/assign";
 import { BinOp } from "./types/binOp";
 import { ConditionalExpression } from "./types/conditionalExpression";
-import { Constant } from "./types/constant";
+import { IntegerConstant } from "./types/integerConstant";
 import { FunctionCall } from "./types/functionCall";
 import { UnOp } from "./types/unop";
-import { VariableRef } from "./types/variable_Ref";
+import { VariableRef } from "./types/variableRef";
 
-export type CExpression = Assign | VariableRef | UnOp | Constant | BinOp | ConditionalExpression | FunctionCall;
+export type CExpression = Assign | VariableRef | UnOp | IntegerConstant | BinOp | ConditionalExpression | FunctionCall;

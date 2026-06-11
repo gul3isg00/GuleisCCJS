@@ -27,7 +27,7 @@ const getNodeColor = (type: string) =>
     case 'Assign': return '#3b82f6';
     case 'BinOp':
     case 'UnOp': return '#f59e0b';
-    case 'Constant':
+    case 'IntegerConstant':
     case 'VariableRef': return '#10b981';
     case 'Conditional':
     case 'ConditionalExpression': return '#ef4444';
@@ -40,34 +40,36 @@ const renderCustomNode = ({ nodeDatum, toggleNode }: any) =>
   const bgColor = getNodeColor(nodeDatum.name);
 
   const charWidthTitle = 8.5;
-  const charWidthAttr = 6.6; 
+  const charWidthAttr = 6.6;
 
   let maxTextWidth = (nodeDatum.name?.length || 0) * charWidthTitle;
   let attrCount = 0;
 
-  if (nodeDatum.attributes) {
-    Object.entries(nodeDatum.attributes).forEach(([key, val]) => {
+  if (nodeDatum.attributes)
+  {
+    Object.entries(nodeDatum.attributes).forEach(([key, val]) =>
+    {
       const textLen = `${key}: ${String(val)}`.length * charWidthAttr;
       if (textLen > maxTextWidth) maxTextWidth = textLen;
       attrCount++;
     });
   }
 
-  const paddingX = 40; 
-  const width = Math.max(100, maxTextWidth + paddingX); 
-  const height = 30 + (attrCount * 14) + 10;         
+  const paddingX = 40;
+  const width = Math.max(100, maxTextWidth + paddingX);
+  const height = 30 + (attrCount * 14) + 10;
 
   return (
     <g onClick={toggleNode} style={{ cursor: 'pointer' }}>
-      <rect 
-        width={width} 
-        height={height} 
-        x={-(width / 2)} 
-        y="-20"        
-        fill={bgColor} 
-        rx="6" 
-        stroke="var(--bg)" 
-        strokeWidth="3" 
+      <rect
+        width={width}
+        height={height}
+        x={-(width / 2)}
+        y="-20"
+        fill={bgColor}
+        rx="6"
+        stroke="var(--bg)"
+        strokeWidth="3"
       />
       <text fill="white" strokeWidth="0" x="0" y="0" textAnchor="middle" style={{ fontSize: '14px', fontWeight: 'bold', fontFamily: 'var(--mono)' }}>
         {nodeDatum.name}
@@ -161,10 +163,10 @@ function App()
             <div ref={treeContainerRef} style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
               {ast ? (
                 <Tree
-                  data={ast} 
-                  orientation="vertical" 
+                  data={ast}
+                  orientation="vertical"
                   pathFunc="step"
-                  translate={{ x: 300, y: 50 }} 
+                  translate={{ x: 300, y: 50 }}
                   nodeSize={{ x: 150, y: 90 }}
                   separation={{ siblings: 1.5, nonSiblings: 1.2 }}
                   renderCustomNodeElement={renderCustomNode}
@@ -174,7 +176,7 @@ function App()
               )}
             </div>
           </div>
-          </div>
+        </div>
 
         <div className="column col-right">
           <div className="panel panel-semantic">

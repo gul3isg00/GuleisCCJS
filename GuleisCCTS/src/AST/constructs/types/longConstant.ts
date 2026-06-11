@@ -1,10 +1,11 @@
 import { ASTNode, TreeVisualizerNode } from "../../ASTNode";
+import { Long } from "../cType";
 
-export class Constant extends ASTNode
+export class LongConstant extends ASTNode
 {
-  value: number;
+  value: Long;
 
-  constructor(value: number)
+  constructor(value: Long)
   {
     super();
     this.value = value;
@@ -12,13 +13,13 @@ export class Constant extends ASTNode
 
   toString(): string
   {
-    return `<Constant | value: ${this.value}>`;
+    return `<LongConstant | value: ${this.value}>`;
   }
 
   toTree(): TreeVisualizerNode
   {
     return {
-      name: "Constant",
+      name: "LongConstant",
       attributes: { "value": this.value },
     };
   }

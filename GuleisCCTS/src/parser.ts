@@ -1,7 +1,7 @@
 import { ASTNode } from "./AST/ASTNode";
 import { CFunction } from "./AST/constructs/cFunction";
 import { CProgram } from "./AST/constructs/cProgram";
-import { Constant } from "./AST/constructs/types/constant";
+import { IntegerConstant } from "./AST/constructs/types/integerConstant";
 import { CExpression } from "./AST/constructs/cExpression";
 import { FunctionDeclaration } from "./AST/constructs/types/functionDeclaration";
 import { Program } from "./AST/constructs/types/program";
@@ -10,7 +10,7 @@ import { CStatement } from "./AST/constructs/cStatement";
 import { UnOp } from "./AST/constructs/types/unop";
 import { BinOp } from "./AST/constructs/types/binOp";
 import { Declare } from "./AST/constructs/types/declare";
-import { VariableRef } from "./AST/constructs/types/variable_Ref";
+import { VariableRef } from "./AST/constructs/types/variableRef";
 import { Assign } from "./AST/constructs/types/assign";
 import { Conditional } from "./AST/constructs/types/conditional";
 import { CDeclaration } from "./AST/constructs/cDeclaration";
@@ -30,59 +30,71 @@ import { CTopLevelItem } from "./AST/constructs/cTopLevelItem";
 const DEBUG_MODE = false;
 
 // Lets try and read this.
-export class Parser {
+export class Parser
+{
   tokens: string[];
   current: number;
   line_number: number;
 
-  constructor() {
+  constructor()
+  {
     this.tokens = [];
     this.current = 0;
     this.line_number = 0;
   }
 
-  private skipGarbage(): void {
+  private skipGarbage(): void
+  {
     while (
       this.tokens[this.current] == "\n" ||
       this.tokens[this.current] == "//"
-    ) {
-      if (this.tokens[this.current] == "\n") {
+    )
+    {
+      if (this.tokens[this.current] == "\n")
+      {
         this.line_number++;
         this.current++;
-      } else if (this.tokens[this.current] == "//") {
+      } else if (this.tokens[this.current] == "//")
+      {
         if (DEBUG_MODE) console.log("Skipping comment...");
         while (
           this.tokens[this.current] != null &&
           this.tokens[this.current] != "\n"
-        ) {
+        )
+        {
           this.current++;
         }
       }
     }
   }
 
-  isAtEnd(): boolean {
+  isAtEnd(): boolean
+  {
     this.skipGarbage();
     return (
       this.current >= this.tokens.length || this.tokens[this.current] == null
     );
   }
 
-  throwError(str: string) {
+  throwError(str: string)
+  {
     throw new Error(`Syntax Error: ${str} (Line ${this.line_number})`);
   }
 
-  peek(): string {
+  peek(): string
+  {
     this.skipGarbage();
     // if (!this.tokens[this.current]) this.throwError("Malformed.")
     return this.tokens[this.current];
   }
 
-  lookAhead(amount: number): string {
+  lookAhead(amount: number): string
+  {
     const temp = this.current;
 
     let token = "";
-    for (let x = 0; x != amount; x++) {
+    for (let x = 0; x != amount; x++)
+    {
       this.skipGarbage();
       token = this.consume();
     }
@@ -91,7 +103,8 @@ export class Parser {
     return token;
   }
 
-  consume(): string {
+  consume(): string
+  {
     this.skipGarbage();
 
     const token = this.tokens[this.current];
@@ -101,14 +114,16 @@ export class Parser {
     return token;
   }
 
-  parse(tokens: string[]): ASTNode {
+  parse(tokens: string[]): ASTNode
+  {
     this.tokens = tokens;
     this.current = 0;
 
     // Start parsing. The root is always a 'Program'.
     const root = this._parseProgram();
 
-    if (!this.isAtEnd()) {
+    if (!this.isAtEnd())
+    {
       this.throwError(
         `Unexpected token after program end: '${this.tokens[this.current]}'`
       );
@@ -117,10 +132,12 @@ export class Parser {
     return root;
   }
 
-  expect(expected: string) {
+  expect(expected: string)
+  {
     const token = this.peek();
     if (DEBUG_MODE) console.log(`Expecting ${token} == ${expected} `);
-    if (token === expected) {
+    if (token === expected)
+    {
       if (DEBUG_MODE) console.log(` - MATCH, returning ${token} `);
       return this.consume();
     }
@@ -128,19 +145,23 @@ export class Parser {
   }
 
   //<program> ::= { <function> | <declaration> }
-  _parseProgram(): CProgram {
+  _parseProgram(): CProgram
+  {
     this.line_number = 0;
 
     let items: CTopLevelItem[] = [];
 
     let next = this.peek();
 
-    while (next == "int") {
+    while (next == "int")
+    {
       const look = this.lookAhead(3);
 
-      if (look == "(") {
+      if (look == "(")
+      {
         items.push(this._parseFunction());
-      } else {
+      } else
+      {
         items.push(this._parseDeclaration());
       }
 
@@ -151,7 +172,8 @@ export class Parser {
   }
 
   // <function> ::= "int" <id> "(" [ "int" <id> { "," "int" <id> } ] ")" ( "{" { <block-item> } "}" | ";" )
-  _parseFunction(): CFunction {
+  _parseFunction(): CFunction
+  {
     this.expect("int");
 
     const identifier = this.consume();
@@ -162,14 +184,16 @@ export class Parser {
 
     let params: string[] = [];
 
-    while (next != ")") {
+    while (next != ")")
+    {
       this.expect("int");
 
       params.push(this.consume());
 
       next = this.peek();
 
-      if (next == ",") {
+      if (next == ",")
+      {
         this.consume();
         next = this.peek();
       }
@@ -177,7 +201,8 @@ export class Parser {
 
     this.expect(")");
 
-    if (this.peek() == ";") {
+    if (this.peek() == ";")
+    {
       this.consume();
       return new FunctionDeclaration(identifier, params, undefined);
     }
@@ -190,12 +215,15 @@ export class Parser {
   }
 
   //<block-item> ::= <statement> | <declaration>
-  _parseBlock(): CBlock {
+  _parseBlock(): CBlock
+  {
     const next = this.peek();
 
-    if (next == "int") {
+    if (next == "int")
+    {
       return this._parseDeclaration();
-    } else {
+    } else
+    {
       return this._parseStatement();
     }
   }
@@ -210,10 +238,12 @@ export class Parser {
   //               | "do" <statement> "while" "(" <exp> ")" ";"
   //               | "break" ";"
   //               | "continue" ";"
-  _parseStatement(): CStatement {
+  _parseStatement(): CStatement
+  {
     const token = this.peek();
 
-    switch (token) {
+    switch (token)
+    {
       // Return statement.
       case "return":
         this.consume();
@@ -237,14 +267,16 @@ export class Parser {
 
         const cond_statement = this._parseStatement();
 
-        if (this.peek() == "else") {
+        if (this.peek() == "else")
+        {
           this.consume();
           return new Conditional(
             cond_exp,
             cond_statement,
             this._parseStatement()
           );
-        } else {
+        } else
+        {
           return new Conditional(cond_exp, cond_statement);
         }
 
@@ -254,10 +286,12 @@ export class Parser {
         let next = this.peek();
         let blocks = [];
 
-        while (next != "}") {
+        while (next != "}")
+        {
           blocks.push(this._parseBlock());
           next = this.peek();
-          if (next == null) {
+          if (next == null)
+          {
             this.throwError(`Missing }`);
           }
         }
@@ -271,21 +305,26 @@ export class Parser {
         this.consume();
         this.expect("(");
 
-        if (this.peek() === "int") {
+        if (this.peek() === "int")
+        {
           const decl = this._parseDeclaration();
 
-          let exp_a: CExpression = new Constant(0);
-          if (this.peek() === ";") {
+          let exp_a: CExpression = new IntegerConstant(0);
+          if (this.peek() === ";")
+          {
             this.consume();
-          } else {
+          } else
+          {
             exp_a = this._parseExpression();
             this.expect(";");
           }
 
           let exp_b: Exp = new Exp();
-          if (this.peek() === ")") {
+          if (this.peek() === ")")
+          {
             this.consume();
-          } else {
+          } else
+          {
             exp_b = new Exp(this._parseExpression());
             this.expect(")");
           }
@@ -293,27 +332,34 @@ export class Parser {
           const statem = this._parseStatement();
 
           return new ForDeclaration(decl, exp_a, exp_b, statem);
-        } else {
-          let init_exp: CExpression = new Constant(0);
-          if (this.peek() === ";") {
+        } else
+        {
+          let init_exp: CExpression = new IntegerConstant(0);
+          if (this.peek() === ";")
+          {
             this.consume();
-          } else {
+          } else
+          {
             init_exp = this._parseExpression();
             this.expect(";");
           }
 
-          let cond_exp: CExpression = new Constant(0);
-          if (this.peek() == ";") {
+          let cond_exp: CExpression = new IntegerConstant(0);
+          if (this.peek() == ";")
+          {
             this.consume();
-          } else {
+          } else
+          {
             cond_exp = this._parseExpression();
             this.expect(";");
           }
 
           let post_exp: Exp = new Exp();
-          if (this.peek() === ")") {
+          if (this.peek() === ")")
+          {
             this.consume();
-          } else {
+          } else
+          {
             post_exp = new Exp(this._parseExpression());
             this.expect(")");
           }
@@ -371,18 +417,21 @@ export class Parser {
   }
 
   // <declaration> ::= "int" <id> [ = <exp> ] ";"
-  _parseDeclaration(): CDeclaration {
+  _parseDeclaration(): CDeclaration
+  {
     this.expect("int");
 
     const varRef = this.consume();
 
-    if (varRef == null) {
+    if (varRef == null)
+    {
       this.throwError(`Expected identifier.`);
     }
 
     const next = this.peek();
 
-    if (next == "=") {
+    if (next == "=")
+    {
       this.consume();
 
       const value = this._parseExpression();
@@ -390,7 +439,8 @@ export class Parser {
       this.expect(";");
 
       return new Declare(varRef, value);
-    } else {
+    } else
+    {
       this.expect(";");
 
       return new Declare(varRef);
@@ -399,7 +449,8 @@ export class Parser {
 
   // Lower the line number, higher the precidence.
   // <exp> ::= <id> "=" <exp> | <conditional-exp>
-  _parseExpression(): CExpression {
+  _parseExpression(): CExpression
+  {
     const left_exp = this._parseConditionalExpression();
 
     // Create assignment blocks.
@@ -418,32 +469,47 @@ export class Parser {
     ];
     const nextOp = this.peek();
 
-    if (assignOps.indexOf(nextOp) != -1) {
+    if (assignOps.indexOf(nextOp) != -1)
+    {
       this.consume();
 
       const right_exp = this._parseExpression();
 
-      if (nextOp == "=") {
+      if (nextOp == "=")
+      {
         return new Assign((left_exp as VariableRef).str, right_exp);
-      } else {
+      } else
+      {
         return new BinOp(nextOp, left_exp, right_exp);
       }
-    } else {
+    } else
+    {
       return left_exp;
     }
   }
 
-  _parseConditionalExpression(): CExpression {
-    const exp = this._parseExpressionModular(() => {
-      return this._parseExpressionModular(() => {
-        return this._parseExpressionModular(() => {
-          return this._parseExpressionModular(() => {
-            return this._parseExpressionModular(() => {
-              return this._parseExpressionModular(() => {
-                return this._parseExpressionModular(() => {
-                  return this._parseExpressionModular(() => {
-                    return this._parseExpressionModular(() => {
-                      return this._parseExpressionModular(() => {
+  _parseConditionalExpression(): CExpression
+  {
+    const exp = this._parseExpressionModular(() =>
+    {
+      return this._parseExpressionModular(() =>
+      {
+        return this._parseExpressionModular(() =>
+        {
+          return this._parseExpressionModular(() =>
+          {
+            return this._parseExpressionModular(() =>
+            {
+              return this._parseExpressionModular(() =>
+              {
+                return this._parseExpressionModular(() =>
+                {
+                  return this._parseExpressionModular(() =>
+                  {
+                    return this._parseExpressionModular(() =>
+                    {
+                      return this._parseExpressionModular(() =>
+                      {
                         return this._parseFactor();
                         // <term> ::= <factor> { ("*" | "/" | "%") <factor> }
                       }, ["*", "/", "%"]);
@@ -466,7 +532,8 @@ export class Parser {
       // <logical-or-exp> ::= <logical-and-exp> { "||" <logical-and-exp> }
     }, ["||"]);
 
-    if (this.peek() == "?") {
+    if (this.peek() == "?")
+    {
       this.consume();
 
       const exp_b = this._parseExpression();
@@ -476,7 +543,8 @@ export class Parser {
       const exp_c = this._parseConditionalExpression();
 
       return new ConditionalExpression(exp, exp_b, exp_c);
-    } else {
+    } else
+    {
       return exp;
     }
   }
@@ -485,11 +553,13 @@ export class Parser {
   _parseExpressionModular(
     _parse_method: () => CExpression,
     operators: string[]
-  ): CExpression {
+  ): CExpression
+  {
     let expression = _parse_method();
     let next = this.peek();
 
-    while (operators.indexOf(next) != -1) {
+    while (operators.indexOf(next) != -1)
+    {
       let op = this.consume();
       let next_expression = _parse_method();
       expression = new BinOp(op, expression, next_expression);
@@ -500,18 +570,21 @@ export class Parser {
   }
 
   // <function-call> ::= id "(" [ <exp> { "," <exp> } ] ")"
-  _parseFunctionCall(id: string): CExpression {
+  _parseFunctionCall(id: string): CExpression
+  {
     this.expect("(");
 
     let params: CExpression[] = [];
 
     let next = this.peek();
 
-    while (next != ")") {
+    while (next != ")")
+    {
       params.push(this._parseExpression());
       next = this.peek();
 
-      if (next == ",") {
+      if (next == ",")
+      {
         this.consume();
         next = this.peek();
       }
@@ -523,12 +596,14 @@ export class Parser {
   }
 
   // <factor> ::= <function-call> | "(" <exp> ")" | <unary_op> <factor> | <int> | <id>
-  _parseFactor(): CExpression {
+  _parseFactor(): CExpression
+  {
     const next = this.consume();
     let parsedFactor: CExpression;
 
     // "(" <exp> ")"
-    if (next == "(") {
+    if (next == "(")
+    {
       const exp = this._parseExpression();
       if (this.consume() != ")") this.throwError(`')' expected.`);
       parsedFactor = exp;
@@ -537,20 +612,25 @@ export class Parser {
     // PREFIX
 
     // <unary_op> <factor>
-    else if (UnOp.is_unop(next)) {
+    else if (UnOp.is_unop(next))
+    {
       const op = next;
       const factor = this._parseFactor();
       parsedFactor = new UnOp(op, factor);
     }
     // <int>
-    else if (!isNaN(Number(next))) {
-      parsedFactor = new Constant(Number(next));
+    else if (!isNaN(Number(next)))
+    {
+      parsedFactor = new IntegerConstant(Number(next));
     }
     // <id> OR function call
-    else {
-      if (this.peek() == "(") {
+    else
+    {
+      if (this.peek() == "(")
+      {
         parsedFactor = this._parseFunctionCall(next);
-      } else {
+      } else
+      {
         parsedFactor = new VariableRef(next);
       }
     }
@@ -558,7 +638,8 @@ export class Parser {
     // POSTFIX
 
     const next_2 = this.peek();
-    if (next_2 == "++" || next_2 == "--") {
+    if (next_2 == "++" || next_2 == "--")
+    {
       const op = this.consume();
       parsedFactor = new UnOp(op, parsedFactor);
     }
