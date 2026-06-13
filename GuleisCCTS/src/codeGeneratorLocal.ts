@@ -1,5 +1,5 @@
-import { ASTNode } from "./AST/ASTNode";
-import { CProgram } from "./AST/constructs/cProgram";
+import { ASTNode } from "./ast/ASTNode";
+import { CProgram } from "./ast/constructs/cProgram";
 import { CodeGenerator } from "./codeGenerator";
 import fs from "fs"
 

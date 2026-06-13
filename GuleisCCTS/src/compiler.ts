@@ -3,8 +3,8 @@ import { Parser } from "./parser";
 import { CodeGenerator } from "./codeGenerator";
 import { CodeGeneratorLocal } from "./codeGeneratorLocal";
 import { SemanticAnalyser } from "./semanticAnalyser";
-import { IntegerConstant } from "./AST/constructs/types/integerConstant";
-import { ASTNode } from "./AST/ASTNode";
+import { IntegerConstant } from "./ast/constructs/nodes/types/integerConstant";
+import { ASTNode } from "./ast/ASTNode";
 
 const DO_CODE_GENERATION = true;
 const DO_SEMANTIC_ANALYSIS = true;

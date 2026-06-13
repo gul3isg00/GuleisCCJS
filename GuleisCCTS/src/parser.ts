@@ -1,33 +1,37 @@
-import { ASTNode } from "./AST/ASTNode";
-import { CFunction } from "./AST/constructs/cFunction";
-import { CProgram } from "./AST/constructs/cProgram";
-import { IntegerConstant } from "./AST/constructs/types/integerConstant";
-import { CExpression } from "./AST/constructs/cExpression";
-import { FunctionDeclaration } from "./AST/constructs/types/functionDeclaration";
-import { Program } from "./AST/constructs/types/program";
-import { ReturnStatement } from "./AST/constructs/types/returnStatement";
-import { CStatement } from "./AST/constructs/cStatement";
-import { UnOp } from "./AST/constructs/types/unop";
-import { BinOp } from "./AST/constructs/types/binOp";
-import { Declare } from "./AST/constructs/types/declare";
-import { VariableRef } from "./AST/constructs/types/variableRef";
-import { Assign } from "./AST/constructs/types/assign";
-import { Conditional } from "./AST/constructs/types/conditional";
-import { CDeclaration } from "./AST/constructs/cDeclaration";
-import { CBlock } from "./AST/constructs/cBlock";
-import { ConditionalExpression } from "./AST/constructs/types/conditionalExpression";
-import { Compound } from "./AST/constructs/types/compound";
-import { Exp } from "./AST/constructs/types/exp";
-import { While } from "./AST/constructs/types/while";
-import { Do } from "./AST/constructs/types/do";
-import { Break } from "./AST/constructs/types/break";
-import { Continue } from "./AST/constructs/types/continue";
-import { ForDeclaration } from "./AST/constructs/types/forDeclaration";
-import { For } from "./AST/constructs/types/for";
-import { FunctionCall } from "./AST/constructs/types/functionCall";
-import { CTopLevelItem } from "./AST/constructs/cTopLevelItem";
-import { CType } from "./AST/constructs/cType";
-import { FunctionType } from "./AST/constructs/types/functionType";
+import { ASTNode } from "./ast/ASTNode";
+import { CBlock } from "./ast/constructs/cBlock";
+import { CDeclaration } from "./ast/constructs/cDeclaration";
+import { CExpression } from "./ast/constructs/cExpression";
+import { CFunction } from "./ast/constructs/cFunction";
+import { CProgram } from "./ast/constructs/cProgram";
+import { CStatement } from "./ast/constructs/cStatement";
+import { CStorageClass } from "./ast/constructs/cStorageClass";
+import { CTopLevelItem } from "./ast/constructs/cTopLevelItem";
+import { CType } from "./ast/constructs/cType";
+import { Program } from "./ast/constructs/nodes/core/program";
+import { Declare } from "./ast/constructs/nodes/declarations/declare";
+import { ForDeclaration } from "./ast/constructs/nodes/declarations/forDeclaration";
+import { FunctionDeclaration } from "./ast/constructs/nodes/declarations/functionDeclaration";
+import { Assign } from "./ast/constructs/nodes/expressions/assign";
+import { BinOp } from "./ast/constructs/nodes/expressions/binOp";
+import { ConditionalExpression } from "./ast/constructs/nodes/expressions/conditionalExpression";
+import { Exp } from "./ast/constructs/nodes/expressions/exp";
+import { FunctionCall } from "./ast/constructs/nodes/expressions/functionCall";
+import { UnOp } from "./ast/constructs/nodes/expressions/unop";
+import { VariableRef } from "./ast/constructs/nodes/expressions/variableRef";
+import { Break } from "./ast/constructs/nodes/statements/break";
+import { Compound } from "./ast/constructs/nodes/statements/compound";
+import { Conditional } from "./ast/constructs/nodes/statements/conditional";
+import { Continue } from "./ast/constructs/nodes/statements/continue";
+import { Do } from "./ast/constructs/nodes/statements/do";
+import { For } from "./ast/constructs/nodes/statements/for";
+import { ReturnStatement } from "./ast/constructs/nodes/statements/returnStatement";
+import { While } from "./ast/constructs/nodes/statements/while";
+import { Extern } from "./ast/constructs/nodes/types/extern";
+import { Int } from "./ast/constructs/nodes/types/int";
+import { IntegerConstant } from "./ast/constructs/nodes/types/integerConstant";
+import { Long } from "./ast/constructs/nodes/types/long";
+import { Static } from "./ast/constructs/nodes/types/static";
 
 const DEBUG_MODE = false;
 
@@ -177,7 +181,7 @@ export class Parser
   // <function-declaration> ::= { <specifier> }+ <identifier> "(" <param-list> ")" ( <block> | ";") 
   _parseFunction(): CFunction
   {
-    // Need to do something with this
+    // need to grab all of these
     const spec = this._parseSpecificer();
 
     const identifier = this.consume();
@@ -190,7 +194,7 @@ export class Parser
 
     while (next != ")")
     {
-      // Need to do smth with this
+      // need to grab all of these
       const curSpec = this._parseSpecificer();
 
       params.push(this.consume());
@@ -219,9 +223,38 @@ export class Parser
     );
   }
 
-  _parseSpecificer(): CType
+  // <specifier> ::= <type-specifier> | "static" | "extern"
+  _parseSpecificer(): CStorageClass | CType
   {
-    return new FunctionType([2], 2);
+    const type = this.consume();
+
+    if (type == "static")
+    {
+      return new Static();
+    } else if (type == "extern")
+    {
+      return new Extern();
+    } else
+    {
+      return this._parseTypeSpecifier();
+    }
+  }
+
+  // <type-specifier> ::= "int" | "long"
+  _parseTypeSpecifier(): CType
+  {
+    const type = this.consume();
+
+    if (type == "int")
+    {
+      return new Int();
+    } else if (type == "long")
+    {
+      return new Long();
+    }
+    this.throwError(`Type ${type} unrecognised.`);
+    // So it compiles.
+    return new Int();
   }
 
   //<block-item> ::= <statement> | <declaration>
