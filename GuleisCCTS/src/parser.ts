@@ -26,6 +26,8 @@ import { ForDeclaration } from "./AST/constructs/types/forDeclaration";
 import { For } from "./AST/constructs/types/for";
 import { FunctionCall } from "./AST/constructs/types/functionCall";
 import { CTopLevelItem } from "./AST/constructs/cTopLevelItem";
+import { CType } from "./AST/constructs/cType";
+import { FunctionType } from "./AST/constructs/types/functionType";
 
 const DEBUG_MODE = false;
 
@@ -144,7 +146,7 @@ export class Parser
     this.throwError(`Expected '${expected}' but got '${token}'`);
   }
 
-  //<program> ::= { <function> | <declaration> }
+  //<program> ::= { <declaration> }
   _parseProgram(): CProgram
   {
     this.line_number = 0;
@@ -153,6 +155,7 @@ export class Parser
 
     let next = this.peek();
 
+    // <declaration> ::= <variable-declaration> | <function-declaration> 
     while (next == "int")
     {
       const look = this.lookAhead(3);
@@ -171,10 +174,11 @@ export class Parser
     return new Program(items);
   }
 
-  // <function> ::= "int" <id> "(" [ "int" <id> { "," "int" <id> } ] ")" ( "{" { <block-item> } "}" | ";" )
+  // <function-declaration> ::= { <specifier> }+ <identifier> "(" <param-list> ")" ( <block> | ";") 
   _parseFunction(): CFunction
   {
-    this.expect("int");
+    // Need to do something with this
+    const spec = this._parseSpecificer();
 
     const identifier = this.consume();
 
@@ -186,7 +190,8 @@ export class Parser
 
     while (next != ")")
     {
-      this.expect("int");
+      // Need to do smth with this
+      const curSpec = this._parseSpecificer();
 
       params.push(this.consume());
 
@@ -212,6 +217,11 @@ export class Parser
       params,
       (this._parseStatement() as Compound).blocks
     );
+  }
+
+  _parseSpecificer(): CType
+  {
+    return new FunctionType([2], 2);
   }
 
   //<block-item> ::= <statement> | <declaration>
