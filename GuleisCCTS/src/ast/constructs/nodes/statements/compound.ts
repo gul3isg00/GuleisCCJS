@@ -1,11 +1,11 @@
 import { ASTNode, TreeVisualizerNode } from "../../../ASTNode";
-import { CBlock } from "../../cBlock";
+import { CBlockItem } from "../../cBlockItem";
 
 export class Compound extends ASTNode
 {
-    blocks: CBlock[];
+    blocks: CBlockItem[];
 
-    constructor(blocks: CBlock[])
+    constructor(blocks: CBlockItem[])
     {
         super();
         this.blocks = blocks;

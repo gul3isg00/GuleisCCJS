@@ -9,10 +9,10 @@ import { CFunction } from "./ast/constructs/cFunction";
 import { CProgram } from "./ast/constructs/cProgram";
 import { UnOp } from "./ast/constructs/nodes/unop";
 import { BinOp } from "./ast/constructs/nodes/binOp";
-import { Declare } from "./ast/constructs/nodes/declarations/declare";
+import { VariableDeclaration } from "./ast/constructs/nodes/declarations/variableDeclaration";
 import { Assign } from "./ast/constructs/nodes/expressions/assign";
 import { VariableRef } from "./ast/constructs/nodes/variableRef";
-import { CBlock } from "./ast/constructs/cBlock";
+import { CBlockItem } from "./ast/constructs/cBlockItem";
 import { Conditional } from "./ast/constructs/nodes/conditional";
 import { ConditionalExpression } from "./ast/constructs/nodes/conditionalExpression";
 import { Compound } from "./ast/constructs/nodes/compound";
@@ -166,11 +166,11 @@ ${input.name}:                              ; label for ${input.name}
     this.variable_map.exitFunction();
   }
 
-  _generateBlocks(inputs: CBlock[])
+  _generateBlocks(inputs: CBlockItem[])
   {
     inputs.forEach((input) =>
     {
-      if (input instanceof Declare)
+      if (input instanceof VariableDeclaration)
       {
         this._generateDeclaration(input);
       } else
@@ -392,7 +392,7 @@ _cond_${id}:                             ; label for _cond_${id}`);
     this._generateDeclare(input);
   }
 
-  _generateDeclare(dec: Declare)
+  _generateDeclare(dec: VariableDeclaration)
   {
     this.variable_map.addVariable(dec.str);
 

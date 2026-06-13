@@ -1,15 +1,14 @@
 import { ASTNode } from "./ast/ASTNode";
-import { CBlock } from "./ast/constructs/cBlock";
+import { CBlockItem } from "./ast/constructs/cBlockItem";
 import { CDeclaration } from "./ast/constructs/cDeclaration";
 import { CExpression } from "./ast/constructs/cExpression";
 import { CFunction } from "./ast/constructs/cFunction";
 import { CProgram } from "./ast/constructs/cProgram";
 import { CStatement } from "./ast/constructs/cStatement";
-import { CStorageClass } from "./ast/constructs/cStorageClass";
-import { CTopLevelItem } from "./ast/constructs/cTopLevelItem";
+import { CSpecifier } from "./ast/constructs/cSpecifier";
 import { CType } from "./ast/constructs/cType";
 import { Program } from "./ast/constructs/nodes/core/program";
-import { Declare } from "./ast/constructs/nodes/declarations/declare";
+import { VariableDeclaration } from "./ast/constructs/nodes/declarations/variableDeclaration";
 import { ForDeclaration } from "./ast/constructs/nodes/declarations/forDeclaration";
 import { FunctionDeclaration } from "./ast/constructs/nodes/declarations/functionDeclaration";
 import { Assign } from "./ast/constructs/nodes/expressions/assign";
@@ -32,6 +31,8 @@ import { Int } from "./ast/constructs/nodes/types/int";
 import { IntegerConstant } from "./ast/constructs/nodes/types/integerConstant";
 import { Long } from "./ast/constructs/nodes/types/long";
 import { Static } from "./ast/constructs/nodes/types/static";
+import { CStorageClass } from "./ast/constructs/cStorageClass";
+import { Block } from "./ast/constructs/nodes/core/block";
 
 const DEBUG_MODE = false;
 
@@ -150,93 +151,192 @@ export class Parser
     this.throwError(`Expected '${expected}' but got '${token}'`);
   }
 
+  _isType(input: string): boolean
+  {
+    return ["int", "long"].indexOf(input) != -1;
+  }
+
+  _isSpecifier(input: string): boolean
+  {
+    return this._isType(input) || ["static", "extern"].indexOf(input) != -1;
+  }
+
   //<program> ::= { <declaration> }
   _parseProgram(): CProgram
   {
     this.line_number = 0;
 
-    let items: CTopLevelItem[] = [];
+    let items: CDeclaration[] = [];
 
     let next = this.peek();
 
-    // <declaration> ::= <variable-declaration> | <function-declaration> 
-    while (next == "int")
+    while (this._isSpecifier(next))
     {
-      const look = this.lookAhead(3);
-
-      if (look == "(")
-      {
-        items.push(this._parseFunction());
-      } else
-      {
-        items.push(this._parseDeclaration());
-      }
-
+      items.push(this._parseDeclaration());
       next = this.peek();
     }
 
     return new Program(items);
   }
 
-  // <function-declaration> ::= { <specifier> }+ <identifier> "(" <param-list> ")" ( <block> | ";") 
-  _parseFunction(): CFunction
+  // <declaration> ::= <variable-declaration> | <function-declaration>
+  _parseDeclaration(): CDeclaration
   {
-    // need to grab all of these
-    const spec = this._parseSpecificer();
+    if (this.peek() == "(")
+    {
+      return this._parseFunctionDeclaration();
+    } else
+    {
+      return this._parseVariableDeclaration();
+    }
+  }
 
-    const identifier = this.consume();
 
-    this.expect("(");
+  // <variable-declaration> ::= { <specifier> }+ <identifier> [ "=" <exp> ] ";"
+  _parseVariableDeclaration(): CDeclaration
+  {
+    let type: CType | null = null;
+    let specifier: CStorageClass | undefined = undefined;
 
     let next = this.peek();
 
-    let params: string[] = [];
-
-    while (next != ")")
+    // While the next token is still a specifier
+    while (this._isSpecifier(next))
     {
-      // need to grab all of these
-      const curSpec = this._parseSpecificer();
+      // Grab it
+      let cur = this._parseSpecifier();
 
-      params.push(this.consume());
-
+      // If its a type specifier
+      if (this._isType(next))
+      {
+        if (type == null)
+        {
+          type = cur;
+        } else
+        {
+          this.throwError(`Multiple types specified`);
+        }
+      }
+      // else add it to the list of specifier
+      else if (specifier == null)
+      {
+        specifier = cur;
+      } else
+      {
+        this.throwError(`Multiple storage classes provided`)
+      }
       next = this.peek();
+    }
 
-      if (next == ",")
+    // Identifier
+    const identifier = this.consume();
+
+    if (type != null)
+    {
+      const next = this.peek();
+
+      if (next == "=")
       {
         this.consume();
-        next = this.peek();
+
+        const value = this._parseExpression();
+
+        this.expect(";");
+
+        return new VariableDeclaration(identifier, type, value, specifier);
+      } else
+      {
+        this.expect(";");
+
+        return new VariableDeclaration(identifier, type, undefined, specifier);
       }
-    }
-
-    this.expect(")");
-
-    if (this.peek() == ";")
-    {
-      this.consume();
-      return new FunctionDeclaration(identifier, params, undefined);
-    }
-
-    return new FunctionDeclaration(
-      identifier,
-      params,
-      (this._parseStatement() as Compound).blocks
-    );
-  }
-
-  // <specifier> ::= <type-specifier> | "static" | "extern"
-  _parseSpecificer(): CStorageClass | CType
-  {
-    const type = this.consume();
-
-    if (type == "static")
-    {
-      return new Static();
-    } else if (type == "extern")
-    {
-      return new Extern();
     } else
     {
-      return this._parseTypeSpecifier();
+      this.throwError(`Variable type not defined.`)
+      return new VariableDeclaration("FAIL", new Int(), new IntegerConstant(0));
+    }
+  }
+
+  // <function-declaration> ::= { <specifier> }+ <identifier> "(" <param-list> ")" ( <block> | ";") 
+  _parseFunctionDeclaration(): CFunction
+  {
+    let type: CType | null = null;
+    let specifier: CStorageClass | undefined = undefined;
+
+    let next = this.peek();
+
+    // While the next token is still a specifier
+    while (this._isSpecifier(next))
+    {
+      // Grab it
+      let cur = this._parseSpecifier();
+
+      // If its a type specifier
+      if (this._isType(next))
+      {
+        if (type == null)
+        {
+          type = cur;
+        } else
+        {
+          this.throwError(`Multiple types specified`);
+        }
+      }
+      // else add it to the list of specifier
+      else if (specifier == null)
+      {
+        specifier = cur;
+      } else
+      {
+        this.throwError(`Multiple storage classes provided`)
+      }
+      next = this.peek();
+    }
+
+    // Identifier
+    const identifier = this.consume();
+
+    if (type != null)
+    {
+
+      this.expect("(");
+
+      let next = this.peek();
+
+      let params: string[] = [];
+
+      while (next != ")")
+      {
+        params.push(this.consume());
+
+        next = this.peek();
+
+        if (next == ",")
+        {
+          this.consume();
+          next = this.peek();
+        }
+      }
+
+      this.expect(")");
+
+      if (this.peek() == ";")
+      {
+        this.consume();
+        return new FunctionDeclaration(identifier, params, type, [], specifier);
+      }
+
+      return new FunctionDeclaration(
+        identifier,
+        params,
+        type,
+        this._parseBlock(),
+        specifier
+      );
+    } else
+    {
+      this.throwError(`Function type not defined.`);
+      return new FunctionDeclaration("FAIL", [], new Int());
     }
   }
 
@@ -253,18 +353,49 @@ export class Parser
       return new Long();
     }
     this.throwError(`Type ${type} unrecognised.`);
-    // So it compiles.
     return new Int();
   }
 
-  //<block-item> ::= <statement> | <declaration>
-  _parseBlock(): CBlock
+  // <specifier> ::= <type-specifier> | "static" | "extern"
+  _parseSpecifier(): CSpecifier 
+  {
+    const type = this.consume();
+
+    if (type == "static")
+    {
+      return new Static();
+    } else if (type == "extern")
+    {
+      return new Extern();
+    } else
+    {
+      return this._parseTypeSpecifier();
+    }
+  }
+
+  // <block> ::= "{" { <block-item> } "}"
+  _parseBlock(): Block
+  {
+    this.expect("{")
+
+    const next = this.peek();
+
+    if (this._isSpecifier(next))
+    {
+      return this._parseVariableDeclaration();
+    } else
+    {
+      return this._parseStatement();
+    }
+  }
+
+  _parseBlockItem(): CBlockItem
   {
     const next = this.peek();
 
-    if (next == "int")
+    if (this._isSpecifier(next))
     {
-      return this._parseDeclaration();
+      return this._parseVariableDeclaration();
     } else
     {
       return this._parseStatement();
@@ -350,7 +481,7 @@ export class Parser
 
         if (this.peek() === "int")
         {
-          const decl = this._parseDeclaration();
+          const decl = this._parseVariableDeclaration();
 
           let exp_a: CExpression = new IntegerConstant(0);
           if (this.peek() === ";")
@@ -456,37 +587,6 @@ export class Parser
         const exp = this._parseExpression();
         this.expect(";");
         return exp;
-    }
-  }
-
-  // <declaration> ::= "int" <id> [ = <exp> ] ";"
-  _parseDeclaration(): CDeclaration
-  {
-    this.expect("int");
-
-    const varRef = this.consume();
-
-    if (varRef == null)
-    {
-      this.throwError(`Expected identifier.`);
-    }
-
-    const next = this.peek();
-
-    if (next == "=")
-    {
-      this.consume();
-
-      const value = this._parseExpression();
-
-      this.expect(";");
-
-      return new Declare(varRef, value);
-    } else
-    {
-      this.expect(";");
-
-      return new Declare(varRef);
     }
   }
 

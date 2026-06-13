@@ -1,3 +1,4 @@
-import { Declare } from "./nodes/declarations/declare";
+import { FunctionDeclaration } from "./nodes/declarations/functionDeclaration";
+import { VariableDeclaration } from "./nodes/declarations/variableDeclaration";
 
-export type CDeclaration = Declare;
+export type CDeclaration = VariableDeclaration | FunctionDeclaration;

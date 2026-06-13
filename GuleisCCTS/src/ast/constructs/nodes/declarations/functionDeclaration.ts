@@ -1,6 +1,5 @@
 import { ASTNode, TreeVisualizerNode } from "../../../ASTNode";
-import { CBlock } from "../../cBlock";
-import { CStatement } from "../../cStatement";
+import { CBlockItem } from "../../cBlockItem";
 import { CStorageClass } from "../../cStorageClass";
 import { CType } from "../../cType";
 
@@ -9,10 +8,10 @@ export class FunctionDeclaration extends ASTNode
   name: string;
   params: string[];
   type: CType;
-  blocks?: CBlock[];
+  blocks?: CBlockItem[];
   storageClass?: CStorageClass;
 
-  constructor(name: string, params: string[], type: CType, blocks?: CBlock[], storageClass?: CStorageClass)
+  constructor(name: string, params: string[], type: CType, blocks?: CBlockItem[], storageClass?: CStorageClass)
   {
     super();
     this.name = name;
@@ -24,7 +23,7 @@ export class FunctionDeclaration extends ASTNode
 
   toString(): string
   {
-    return `[Function Declaration | name: ${this.name}, type: ${this.type}, blocks: ${this.blocks ? this.blocks.map(b => b.toString()) : []}, params: ${this.params}, storageClass: ${this.storageClass}]`;
+    return `[Function Declaration | name: ${this.name}, blocks: ${this.blocks ? this.blocks.map(b => b.toString()) : []}, params: ${this.params}, storageClass: ${this.storageClass}]`;
   }
 
   toTree(): TreeVisualizerNode

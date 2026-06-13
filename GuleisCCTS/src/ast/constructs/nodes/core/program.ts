@@ -1,12 +1,11 @@
 import { ASTNode, TreeVisualizerNode } from "../../../ASTNode";
-import { CFunction } from "../../cFunction";
-import { CTopLevelItem } from "../../cTopLevelItem";
+import { CDeclaration } from "../../cDeclaration";
 
 export class Program extends ASTNode
 {
-  items: CTopLevelItem[];
+  items?: CDeclaration[];
 
-  constructor(items: CTopLevelItem[])
+  constructor(items?: CDeclaration[])
   {
     super();
     this.items = items;
@@ -14,14 +13,14 @@ export class Program extends ASTNode
 
   toString(): string
   {
-    return `(Program | items: ${this.items.map(p => p.toString())})`;
+    return `(Program | items: ${this.items ? this.items.map(p => p.toString()) : ""})`;
   }
 
   toTree(): TreeVisualizerNode
   {
     return {
       name: "Program",
-      children: this.items.map(p => p.toTree())
+      children: this.items ? this.items.map(p => p.toTree()) : []
     };
   }
 }

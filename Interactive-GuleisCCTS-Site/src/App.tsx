@@ -23,7 +23,7 @@ const getNodeColor = (type: string) =>
   {
     case 'Program':
     case 'FunctionDeclaration': return '#8b5cf6';
-    case 'Declare':
+    case 'VariableDeclaration':
     case 'Assign': return '#3b82f6';
     case 'BinOp':
     case 'UnOp': return '#f59e0b';

@@ -1,9 +1,9 @@
 import { ASTNode } from "./ast/ASTNode";
-import { CBlock } from "./ast/constructs/cBlock";
+import { CBlockItem } from "./ast/constructs/cBlockItem";
 import { CExpression } from "./ast/constructs/cExpression";
 import { CProgram } from "./ast/constructs/cProgram";
 import { CStatement } from "./ast/constructs/cStatement";
-import { Declare } from "./ast/constructs/nodes/declarations/declare";
+import { VariableDeclaration } from "./ast/constructs/nodes/declarations/variableDeclaration";
 import { ForDeclaration } from "./ast/constructs/nodes/declarations/forDeclaration";
 import { FunctionDeclaration } from "./ast/constructs/nodes/declarations/functionDeclaration";
 import { Assign } from "./ast/constructs/nodes/expressions/assign";
@@ -165,9 +165,9 @@ export class SemanticAnalyser
 
           this.visitFunction(func);
         }
-      } else if (item instanceof Declare)
+      } else if (item instanceof VariableDeclaration)
       {
-        const dec = item as Declare;
+        const dec = item as VariableDeclaration;
 
         if (this.functions.get(dec.str) != null)
           throw new Error(
@@ -207,9 +207,9 @@ export class SemanticAnalyser
 
     this.exitScope();
   }
-  private visitBlock(block: CBlock)
+  private visitBlock(block: CBlockItem)
   {
-    if (block instanceof Declare)
+    if (block instanceof VariableDeclaration)
     {
       this.visitDeclaration(block);
     } else
@@ -218,7 +218,7 @@ export class SemanticAnalyser
     }
   }
 
-  private visitDeclaration(decl: Declare)
+  private visitDeclaration(decl: VariableDeclaration)
   {
     if (decl.expression)
     {
